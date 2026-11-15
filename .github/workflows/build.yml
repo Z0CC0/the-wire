@@ -59,6 +59,10 @@ jobs:
 
       - run: npm ci
 
+      # Prima la compilazione: un test carica `@wire/core` dal `dist`
+      # compilato, e su una macchina pulita quel `dist` non esiste ancora.
+      - run: npm run build
+
       # I test sono il cancello: un test rosso non costruisce niente.
       - run: npm test
 
