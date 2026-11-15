@@ -12,10 +12,12 @@ In fondo trovi anche i comandi per farlo a mano.
 Un file `.dmg` dentro `progetto/release/`. Si apre con doppio clic e si trascina
 `THE WIRE` nelle Applicazioni.
 
-**Se c'e' gia' una "THE WIRE 2" installata, questa la sostituisce.** E' lo
-stesso programma con il nome definitivo (0.1.0, prima versione pubblica): identificativo e cartella dei
-dati sono gli stessi, quindi identita', contatti e storico restano. Per
-scriversi, entrambe le persone devono stare su questa versione.
+**Se c'e' gia' una "THE WIRE 2" (o la 0.1.0) installata**, va tolta dalle
+Applicazioni e al suo posto si mette questa: dalla 0.1.1 l'identificativo e'
+`com.mazzo.thewire` e la cartella dei dati `THE WIRE`. I dati non si perdono:
+al primo avvio la cartella `THE WIRE 2` in Application Support viene rinominata
+in `THE WIRE`, con identita', contatti e storico. Per scriversi, entrambe le
+persone devono stare su questa versione.
 
 **La vecchia THE WIRE 0.2.2**, se e' ancora installata, e' un programma a parte
 con un deposito incompatibile: non viene toccata e la sua identita' non si
@@ -81,7 +83,7 @@ fallito — riprova, non proseguire.
 npm test
 ```
 
-**Devono passare tutti (212).** Se uno è rosso, fermati e riporta quale: è
+**Devono passare tutti (217).** Se uno è rosso, fermati e riporta quale: è
 crittografia, un test rosso vale più di un pacchetto pronto. Unica eccezione:
 un test che fallisce con `Test timed out in 20000ms` su una macchina carica.
 Quelli creano più identità con Argon2id (64 MB l'una) in parallelo e possono
@@ -126,7 +128,7 @@ open "release/mac-arm64/THE WIRE.app"       # su Intel: release/mac/
 ```
 
 Deve aprirsi una finestra nera col logo **THE WIRE** e la schermata
-`PRIMO AVVIO · v0.1.0`. Se compare invece un riquadro "A JavaScript error
+`PRIMO AVVIO · v0.1.1`. Se compare invece un riquadro "A JavaScript error
 occurred in the main process", riporta il testo esatto all'utente: significa che
 qualcosa nel pacchetto non ha funzionato, e il messaggio dice cosa.
 

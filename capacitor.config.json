@@ -1,5 +1,5 @@
 {
-  "appId": "com.mazzo.thewire2",
+  "appId": "com.mazzo.thewire",
   "appName": "THE WIRE",
   "webDir": "apps/pwa/android-www",
   "android": {

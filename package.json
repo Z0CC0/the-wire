@@ -1,7 +1,7 @@
 {
-  "name": "the-wire-2",
+  "name": "the-wire",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "main": "apps/desktop/bundle/main.cjs",
   "description": "Messaggistica cifrata fra amici: PC (Electron), telefono (web app, Android, iPhone).",
@@ -44,7 +44,7 @@
     "vitest": "^4.1.11"
   },
   "build": {
-    "appId": "com.mazzo.thewire2",
+    "appId": "com.mazzo.thewire",
     "productName": "THE WIRE",
     "directories": {
       "output": "release",

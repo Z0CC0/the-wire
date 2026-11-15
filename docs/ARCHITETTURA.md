@@ -89,7 +89,7 @@ npm test
 | Comando | Cosa fa |
 |---------|---------|
 | `npm run desktop` | costruisce il bundle e avvia la finestra Electron |
-| `npm test` | 212 test: crittografia, protocollo, gruppi, lock, consegna, prova d'insieme |
+| `npm test` | 217 test: crittografia, protocollo, gruppi, lock, consegna, prova d'insieme |
 | `npm run dist:win` | installer Windows (NSIS) |
 | `npm run dist:mac` | DMG macOS (arm64 + x64) |
 
@@ -169,8 +169,8 @@ nessuna chiave.
 
 ## Dove stanno i dati, e come spostarli
 
-`%APPDATA%\THE WIRE 2` su Windows, `~/Library/Application Support/THE WIRE 2` su
-macOS, `~/.config/the-wire-2` altrove. Dentro: `wire.vault` (le chiavi, cifrate),
+`%APPDATA%\THE WIRE` su Windows, `~/Library/Application Support/THE WIRE` su
+macOS, `~/.config/the-wire` altrove. Dentro: `wire.vault` (le chiavi, cifrate),
 `wire.history` (lo storico, cifrato), `wire.lock`, i file ricevuti cifrati, e la
 cartella `electron` con la cache di Chromium, tenuta separata perché si può
 cancellare senza perdere niente.
@@ -194,25 +194,31 @@ poi lo riempie: un'interruzione lì dentro lasciava un deposito vuoto.)
 ## Il nome, e i nomi interni
 
 Dal 2026-11-15 questa è **l'unica versione**: la 0.2.2 non sta più nella
-cartella dei progetti e il programma si chiama THE WIRE, versione 0.1.0: la numerazione riparte
-da capo con la prima versione pubblica, e la 2.1.0 costruita la mattina del
-2026-11-15 non è mai stata distribuita. Era
-nata come "THE WIRE 2", programma a parte da tenere accanto alla precedente
-finché era in prova, e di quella fase restano **due nomi interni che non vanno
-cambiati**:
+cartella dei progetti e il programma si chiama THE WIRE. La numerazione riparte
+da capo con la prima versione pubblica (0.1.0), e la 2.1.0 costruita la mattina
+del 2026-11-15 non è mai stata distribuita. Era nata come "THE WIRE 2",
+programma a parte da tenere accanto alla precedente finché era in prova.
 
-- la cartella dei dati è ancora `%APPDATA%\THE WIRE 2` (su Mac `THE WIRE 2`
-  in Application Support): quella chiamata `THE WIRE` appartiene alla 0.2.2, con
-  un deposito di formato diverso, e su un computer che l'ha avuta può esistere
-  ancora;
-- l'identificativo dell'installer è `com.mazzo.thewire2`, e il pacchetto si
-  installa in `Programs\the-wire-2`: è ciò che permette all'installer nuovo di
-  **aggiornare sul posto** l'app già installata, tenendo identità, contatti e
-  storico. Cambiarlo farebbe comparire una seconda app accanto alla prima.
+**Dalla 0.1.1 anche i nomi interni sono quelli definitivi**: cartella dei dati
+`THE WIRE`, identificativo `com.mazzo.thewire` (installer, Android, iOS),
+pacchetto Windows in `Programs\the-wire`. Il "2" è rimasto solo nel passato.
+
+Chi arriva dalla 0.1.0 (o da una "THE WIRE 2"):
+
+- **PC**: al primo avvio `scegliCartella` (`packages/core/src/deposito-file.ts`)
+  trova la cartella `THE WIRE 2` con dentro `wire.vault` e la **rinomina** in
+  `THE WIRE`: identità, contatti e storico ci sono tutti, senza copie. Se al
+  posto nuovo c'è una cartella senza deposito (resti della 0.2.2) viene messa da
+  parte come `THE WIRE - precedente`; se la rinomina fallisce si continua a usare
+  la vecchia. L'installer però è un programma diverso per Windows e macOS: la
+  "THE WIRE 2" va **disinstallata a mano** (i dati non vengono toccati), e al
+  suo posto si installa questa.
+- **Android**: il pacchetto cambia nome, quindi è un'altra app. L'APK 0.1.0 va
+  disinstallato; i dati dentro quell'app non passano (si ricollega il telefono
+  al PC con un codice nuovo, come la prima volta).
+- **Web app**: niente da fare, l'indirizzo è lo stesso e i dati restano nel browser.
 
 **L'identità della 0.2.2 non si eredita**: i due formati non sono compatibili.
-Chi ce l'ha ancora installata può disinstallarla quando vuole; questo programma
-non la tocca.
 
 ## L'app sul telefono, senza il PC
 

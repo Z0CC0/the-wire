@@ -1,4 +1,4 @@
-package com.mazzo.thewire2;
+package com.mazzo.thewire;
 
 import android.Manifest;
 import android.content.pm.PackageManager;

@@ -22,7 +22,7 @@ import {
 } from '@wire/core';
 import { DepositoBrowser } from '@wire/core/deposito-browser.js';
 
-const VERSIONE = '0.1.0';
+const VERSIONE = '0.1.1';
 const deposito = new DepositoBrowser();
 
 let account: Account | null = null;

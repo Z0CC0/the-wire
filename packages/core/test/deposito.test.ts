@@ -14,8 +14,9 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DepositoMemoria, chiaveValida, type Deposito } from '../src/deposito.js';
-import { DepositoFile, cartellaPredefinita } from '../src/deposito-file.js';
-import { readdir } from 'node:fs/promises';
+import { DepositoFile, cartellaPredefinita, scegliCartella } from '../src/deposito-file.js';
+import { mkdir, readdir, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 
 const dirs: string[] = [];
 afterAll(async () => {
@@ -143,10 +144,76 @@ describe('dove stanno i dati', () => {
       expect(cartellaPredefinita()).toBe(join(tmpdir(), 'wire-altrove'));
       process.env['THE_WIRE_DATI'] = '   ';
       expect(cartellaPredefinita()).not.toBe('   ');
-      expect(cartellaPredefinita()).toMatch(/THE WIRE 2|the-wire-2/);
+      expect(cartellaPredefinita()).toMatch(/THE WIRE$|the-wire$/);
     } finally {
       if (prima === undefined) delete process.env['THE_WIRE_DATI'];
       else process.env['THE_WIRE_DATI'] = prima;
     }
+  });
+});
+
+describe('scegliCartella: da "THE WIRE 2" a "THE WIRE"', () => {
+  async function radice(): Promise<string> {
+    const r = await mkdtemp(join(tmpdir(), 'wire-nome-'));
+    dirs.push(r);
+    return r;
+  }
+  async function deposito(c: string): Promise<void> {
+    await mkdir(c, { recursive: true });
+    await writeFile(join(c, 'wire.vault'), 'x');
+    await writeFile(join(c, 'wire.history'), 'y');
+  }
+
+  it('la cartella vecchia con dentro i dati viene rinominata nella nuova', async () => {
+    const r = await radice();
+    const nuova = join(r, 'THE WIRE');
+    const vecchia = join(r, 'THE WIRE 2');
+    await deposito(vecchia);
+    expect(scegliCartella(nuova, vecchia)).toBe(nuova);
+    expect(existsSync(join(nuova, 'wire.vault'))).toBe(true);
+    expect(existsSync(join(nuova, 'wire.history'))).toBe(true);
+    expect(existsSync(vecchia)).toBe(false);
+    // la seconda volta non c'e' piu' niente da spostare
+    expect(scegliCartella(nuova, vecchia)).toBe(nuova);
+  });
+
+  it('se la nuova ha gia un deposito, la vecchia resta dove sta', async () => {
+    const r = await radice();
+    const nuova = join(r, 'THE WIRE');
+    const vecchia = join(r, 'THE WIRE 2');
+    await deposito(nuova);
+    await deposito(vecchia);
+    expect(scegliCartella(nuova, vecchia)).toBe(nuova);
+    expect(existsSync(join(vecchia, 'wire.vault'))).toBe(true);
+  });
+
+  it('una cartella nuova senza deposito (resti di un altro programma) viene messa da parte', async () => {
+    const r = await radice();
+    const nuova = join(r, 'THE WIRE');
+    const vecchia = join(r, 'THE WIRE 2');
+    await mkdir(nuova);
+    await writeFile(join(nuova, 'altro.db'), 'z');
+    await deposito(vecchia);
+    expect(scegliCartella(nuova, vecchia)).toBe(nuova);
+    expect(existsSync(join(nuova, 'wire.vault'))).toBe(true);
+    expect(existsSync(join(`${nuova} - precedente`, 'altro.db'))).toBe(true);
+  });
+
+  it('una cartella nuova vuota non e un ostacolo', async () => {
+    const r = await radice();
+    const nuova = join(r, 'THE WIRE');
+    const vecchia = join(r, 'THE WIRE 2');
+    await mkdir(nuova);
+    await deposito(vecchia);
+    expect(scegliCartella(nuova, vecchia)).toBe(nuova);
+    expect(existsSync(join(nuova, 'wire.vault'))).toBe(true);
+    expect(existsSync(`${nuova} - precedente`)).toBe(false);
+  });
+
+  it('senza dati da nessuna parte vince il nome nuovo, senza creare niente', async () => {
+    const r = await radice();
+    const nuova = join(r, 'THE WIRE');
+    expect(scegliCartella(nuova, join(r, 'THE WIRE 2'))).toBe(nuova);
+    expect(existsSync(nuova)).toBe(false);
   });
 });

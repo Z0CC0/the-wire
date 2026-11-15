@@ -90,7 +90,7 @@ Nel pannello **Signing & Capabilities** del target `App`:
 - in **Team** scegli il proprio ID Apple (se non c'è: Xcode › Settings ›
   Accounts › `+`);
 - cambia il **Bundle Identifier** in qualcosa di unico, per esempio
-  `com.<cognome>.thewire2`. Con l'ID gratuito quello predefinito viene rifiutato
+  `com.<cognome>.thewire`. Con l'ID gratuito quello predefinito viene rifiutato
   perché qualcun altro potrebbe averlo già usato.
 
 ### 4. Installa sull'iPhone

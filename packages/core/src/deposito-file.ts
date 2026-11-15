@@ -6,6 +6,7 @@
 // non lo tocca mai.
 
 import { mkdir, readFile, rename, rm, writeFile, appendFile } from 'node:fs/promises';
+import { existsSync, readdirSync, renameSync, rmdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir, platform } from 'node:os';
 import { chiaveValida, type Deposito } from './deposito.js';
@@ -13,11 +14,11 @@ import { chiaveValida, type Deposito } from './deposito.js';
 /**
  * Dove vivono i dati, secondo le convenzioni di ciascun sistema.
  *
- * `THE WIRE 2` e non `THE WIRE`: la versione precedente e' ancora installata e
- * usa quell'altra cartella. Condividerla vorrebbe dire due programmi con due
- * idee diverse dello stesso file — questa ci scrive account e dispositivi, che
- * la precedente non sa cosa siano. Chi ha tutte e due tiene due identita'
- * separate, ed e' la cosa giusta finche' questa e' in prova.
+ * La cartella si chiama `THE WIRE`. Fino alla 0.1.0 si chiamava `THE WIRE 2`,
+ * perche' il programma era nato accanto a una versione precedente che usava
+ * `THE WIRE`: quella versione non c'e' piu', e il nome torna quello giusto.
+ * Chi ha ancora la cartella vecchia la ritrova rinominata al primo avvio, con
+ * dentro identita', contatti e storico: vedi `scegliCartella`.
  */
 export function cartellaPredefinita(): string {
   // `THE_WIRE_DATI` sposta la cartella per intero: serve a chi prova due
@@ -26,12 +27,50 @@ export function cartellaPredefinita(): string {
   const scelta = process.env['THE_WIRE_DATI'];
   if (scelta && scelta.trim()) return scelta.trim();
   if (platform() === 'win32') {
-    return join(process.env['APPDATA'] ?? join(homedir(), 'AppData', 'Roaming'), 'THE WIRE 2');
+    const base = process.env['APPDATA'] ?? join(homedir(), 'AppData', 'Roaming');
+    return scegliCartella(join(base, 'THE WIRE'), join(base, 'THE WIRE 2'));
   }
   if (platform() === 'darwin') {
-    return join(homedir(), 'Library', 'Application Support', 'THE WIRE 2');
+    const base = join(homedir(), 'Library', 'Application Support');
+    return scegliCartella(join(base, 'THE WIRE'), join(base, 'THE WIRE 2'));
   }
-  return join(process.env['XDG_CONFIG_HOME'] ?? join(homedir(), '.config'), 'the-wire-2');
+  const base = process.env['XDG_CONFIG_HOME'] ?? join(homedir(), '.config');
+  return scegliCartella(join(base, 'the-wire'), join(base, 'the-wire-2'));
+}
+
+/** Il file che dice "qui c'e' un deposito di questo programma". */
+const SEGNO = 'wire.vault';
+
+/**
+ * Decide fra la cartella nuova e quella col nome vecchio, spostando i dati se
+ * serve. Sincrona perche' la chiama l'avvio del programma, prima di ogni altra
+ * cosa.
+ *
+ * - La nuova ha gia' un deposito: si usa quella, la vecchia non si tocca.
+ * - La vecchia ha un deposito e la nuova no: la vecchia viene **rinominata**
+ *   nella nuova (stesso disco, operazione atomica, nessuna copia). Se al posto
+ *   della nuova c'e' una cartella senza deposito — i resti di un programma
+ *   precedente con lo stesso nome — quella viene messa da parte come
+ *   `<nome> - precedente`, cosi' non si perde niente.
+ * - Se la rinomina fallisce (file aperti da un'altra istanza, permessi), si
+ *   continua a usare la vecchia: meglio un nome sbagliato che un deposito vuoto.
+ * - Nessuna delle due ha un deposito: la nuova, che si creera' alla prima
+ *   scrittura.
+ */
+export function scegliCartella(nuova: string, vecchia: string): string {
+  const haDeposito = (c: string) => existsSync(join(c, SEGNO));
+  if (haDeposito(nuova)) return nuova;
+  if (!haDeposito(vecchia)) return nuova;
+  try {
+    if (existsSync(nuova)) {
+      if (readdirSync(nuova).length === 0) rmdirSync(nuova);
+      else renameSync(nuova, `${nuova} - precedente`);
+    }
+    renameSync(vecchia, nuova);
+    return nuova;
+  } catch {
+    return vecchia;
+  }
 }
 
 export class DepositoFile implements Deposito {

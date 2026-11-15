@@ -10,12 +10,12 @@
 </p>
 
 <p align="center">
-  <img alt="versione" src="https://img.shields.io/badge/versione-0.1.0-ff1f1f?style=flat-square">
+  <img alt="versione" src="https://img.shields.io/badge/versione-0.1.1-ff1f1f?style=flat-square">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-installer-000?style=flat-square">
   <img alt="macOS" src="https://img.shields.io/badge/macOS-dmg-000?style=flat-square">
   <img alt="Android" src="https://img.shields.io/badge/Android-apk-000?style=flat-square">
   <img alt="iPhone" src="https://img.shields.io/badge/iPhone-web%20app-000?style=flat-square">
-  <img alt="test" src="https://img.shields.io/badge/test-212%20verdi-000?style=flat-square">
+  <img alt="test" src="https://img.shields.io/badge/test-217%20verdi-000?style=flat-square">
 </p>
 
 ---
@@ -134,8 +134,8 @@ Tutto sta nella [pagina delle release](../../releases): un file per sistema.
 
 | Sistema | File | Come |
 |---|---|---|
-| **Windows** 10/11 | `THE-WIRE-Setup-0.1.0.exe` | Doppio clic. Si installa per l'utente corrente e mette l'icona sul desktop. SmartScreen avvisa perché non è firmato: *Ulteriori informazioni → Esegui comunque*. |
-| **macOS** (Apple Silicon e Intel) | `THE-WIRE-0.1.0-arm64.dmg` / `THE-WIRE-0.1.0-x64.dmg` | Apri il DMG e trascina in Applicazioni. La prima volta **tasto destro → Apri** (non è firmato). Se insiste: `xattr -cr "/Applications/THE WIRE.app"`. |
+| **Windows** 10/11 | `THE-WIRE-Setup-0.1.1.exe` | Doppio clic. Si installa per l'utente corrente e mette l'icona sul desktop. SmartScreen avvisa perché non è firmato: *Ulteriori informazioni → Esegui comunque*. |
+| **macOS** (Apple Silicon e Intel) | `THE-WIRE-0.1.1-arm64.dmg` / `THE-WIRE-0.1.1-x64.dmg` | Apri il DMG e trascina in Applicazioni. La prima volta **tasto destro → Apri** (non è firmato). Se insiste: `xattr -cr "/Applications/THE WIRE.app"`. |
 | **Android** | `THE-WIRE-Android.apk` | Copia sul telefono e apri: Android chiede di consentire l'installazione da fonti sconosciute. Niente Play Store, niente indirizzo web. |
 | **iPhone** (e Android senza installare) | **[https://z0cc0.github.io/the-wire/](https://z0cc0.github.io/the-wire/)** | È la web app, già in linea su GitHub Pages da questo repository. Dal telefono si apre quell'indirizzo — **con Safari** su iPhone — e si aggiunge alla schermata Home. `THE-WIRE-telefono.zip` nella release è la stessa cartella, per chi vuole un indirizzo proprio: [LEGGIMI-telefono.md](LEGGIMI-telefono.md). |
 
@@ -145,6 +145,12 @@ Tutto sta nella [pagina delle release](../../releases): un file per sistema.
 > la stessa cartella: chi vuole può confrontare ciò che il telefono scarica con
 > ciò che sta nel repository. Nei file non c'è nulla di segreto: le chiavi
 > nascono sul dispositivo di chi installa.
+
+> **Vieni dalla 0.1.0 o da "THE WIRE 2"?** Dalla 0.1.1 il programma ha i nomi
+> definitivi, senza "2". Su PC e Mac disinstalla prima la vecchia: i dati non si
+> toccano, e al primo avvio la nuova li ritrova da sola (rinomina la cartella
+> `THE WIRE 2` in `THE WIRE`). Su Android l'APK 0.1.0 va disinstallato e il
+> telefono ricollegato al PC con un codice nuovo. La web app non cambia nulla.
 
 ### Primi passi
 
@@ -182,7 +188,7 @@ Serve solo Node.js 22. Nessun compilatore, nessuna libreria di sistema.
 
 ```bash
 npm install
-npm test            # 212 test: crittografia, protocollo, gruppi, lock, consegna, trasferimento diretto
+npm test            # 217 test: crittografia, protocollo, gruppi, lock, consegna, trasferimento diretto
 npm run desktop     # avvia la finestra dai sorgenti
 ```
 
