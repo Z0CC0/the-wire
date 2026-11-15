@@ -22,7 +22,7 @@ import {
 } from '@wire/core';
 import { DepositoBrowser } from '@wire/core/deposito-browser.js';
 
-const VERSIONE = '2.1.0';
+const VERSIONE = '0.1.0';
 const deposito = new DepositoBrowser();
 
 let account: Account | null = null;
@@ -234,6 +234,10 @@ export const wireApi = {
   addTopic: (id: string, name: string) => {
     const a = richiediAccount();
     return a.addTopic(gruppoRichiesto(a, id), name);
+  },
+  addMember: async (id: string, contactId: string) => {
+    const a = richiediAccount();
+    return vistaGruppo(a, await a.addMember(gruppoRichiesto(a, id), contattoRichiesto(a, contactId)));
   },
   leaveGroup: async (id: string) => {
     await richiediAccount().leaveGroup(id);

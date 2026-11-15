@@ -13,7 +13,7 @@ Un file `.dmg` dentro `progetto/release/`. Si apre con doppio clic e si trascina
 `THE WIRE` nelle Applicazioni.
 
 **Se c'e' gia' una "THE WIRE 2" installata, questa la sostituisce.** E' lo
-stesso programma con il nome definitivo (2.1.0): identificativo e cartella dei
+stesso programma con il nome definitivo (0.1.0, prima versione pubblica): identificativo e cartella dei
 dati sono gli stessi, quindi identita', contatti e storico restano. Per
 scriversi, entrambe le persone devono stare su questa versione.
 
@@ -81,7 +81,7 @@ fallito — riprova, non proseguire.
 npm test
 ```
 
-**Devono passare tutti (210).** Se uno è rosso, fermati e riporta quale: è
+**Devono passare tutti (212).** Se uno è rosso, fermati e riporta quale: è
 crittografia, un test rosso vale più di un pacchetto pronto. Unica eccezione:
 un test che fallisce con `Test timed out in 20000ms` su una macchina carica.
 Quelli creano più identità con Argon2id (64 MB l'una) in parallelo e possono
@@ -126,7 +126,7 @@ open "release/mac-arm64/THE WIRE.app"       # su Intel: release/mac/
 ```
 
 Deve aprirsi una finestra nera col logo **THE WIRE** e la schermata
-`PRIMO AVVIO · v2.1.0`. Se compare invece un riquadro "A JavaScript error
+`PRIMO AVVIO · v0.1.0`. Se compare invece un riquadro "A JavaScript error
 occurred in the main process", riporta il testo esatto all'utente: significa che
 qualcosa nel pacchetto non ha funzionato, e il messaggio dice cosa.
 

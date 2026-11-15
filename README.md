@@ -10,12 +10,12 @@
 </p>
 
 <p align="center">
-  <img alt="versione" src="https://img.shields.io/badge/versione-2.1.0-ff1f1f?style=flat-square">
+  <img alt="versione" src="https://img.shields.io/badge/versione-0.1.0-ff1f1f?style=flat-square">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-installer-000?style=flat-square">
   <img alt="macOS" src="https://img.shields.io/badge/macOS-dmg-000?style=flat-square">
   <img alt="Android" src="https://img.shields.io/badge/Android-apk-000?style=flat-square">
   <img alt="iPhone" src="https://img.shields.io/badge/iPhone-web%20app-000?style=flat-square">
-  <img alt="test" src="https://img.shields.io/badge/test-210%20verdi-000?style=flat-square">
+  <img alt="test" src="https://img.shields.io/badge/test-212%20verdi-000?style=flat-square">
 </p>
 
 ---
@@ -55,6 +55,10 @@ sull'altro. Il telefono funziona a computer spento.
   opzionale (il proprio, o di un fornitore) fa da tramite.
 - **Più dispositivi, un solo account.** Si collega il telefono inquadrando un
   QR; da quel momento rubrica e conversazioni arrivano su entrambi.
+- **Gruppi con argomenti.** Un gruppo ha più conversazioni dentro, e si può
+  aggiungere chi serve anche dopo averlo creato: la fotografia nuova arriva a
+  tutti, nuovo compreso. Nessuna chiave di gruppo da inventare: ogni messaggio
+  viaggia sulle sessioni a due già verificate.
 - **Numero di sicurezza.** Sessanta cifre da confrontare a voce: è l'unico
   momento in cui l'uomo‑nel‑mezzo viene escluso davvero, e cambia se qualcuno
   aggiunge un dispositivo che non doveva.
@@ -72,9 +76,7 @@ sull'altro. Il telefono funziona a computer spento.
   correlare i tempi. È il limite strutturale, e non si risolve senza cambiare
   trasporto.
 - **Il Double Ratchet è un'implementazione originale**, scritta e testata con
-  cura ma **non sottoposta a revisione esterna**. Un difetto nella macchina a
-  stati ha già reso muta una conversazione reale (corretto, e coperto da test).
-  Va bene fra amici. Non usarlo dove la riservatezza è questione di sicurezza
+  cura ma **non sottoposta a revisione esterna**. Va bene fra amici. Non usarlo dove la riservatezza è questione di sicurezza
   personale: per quello esiste Signal.
 - **Niente notifiche push.** Richiederebbero un server che sa quando arriva un
   messaggio e per chi — esattamente ciò che il programma evita di far
@@ -91,8 +93,7 @@ sull'altro. Il telefono funziona a computer spento.
   giorni.
 - **I pacchetti non sono firmati.** Windows avvisa, macOS chiede tasto destro →
   Apri la prima volta. Firmarli costa un certificato e un account Developer.
-- **Non ci sono ancora**: file nei gruppi, aggiunta di membri a un gruppo già
-  creato, chiamate.
+- **Non ci sono ancora**: file nei gruppi, chiamate.
 
 ## Schermate
 
@@ -106,6 +107,9 @@ sull'altro. Il telefono funziona a computer spento.
   <tr>
     <td align="center"><img src="docs/immagini/pc-nuovo.png" width="420"><br><sub>La propria card, i contatti, i gruppi</sub></td>
     <td align="center"><img src="docs/immagini/pc-sblocco.png" width="420"><br><sub>Sblocco: la passphrase apre il deposito cifrato</sub></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2"><img src="docs/immagini/pc-gruppo.png" width="420"><br><sub>Un gruppo appena creato: argomenti, e membri da aggiungere anche dopo</sub></td>
   </tr>
 </table>
 
@@ -130,8 +134,8 @@ Tutto sta nella [pagina delle release](../../releases): un file per sistema.
 
 | Sistema | File | Come |
 |---|---|---|
-| **Windows** 10/11 | `THE-WIRE-Setup-2.1.0.exe` | Doppio clic. Si installa per l'utente corrente e mette l'icona sul desktop. SmartScreen avvisa perché non è firmato: *Ulteriori informazioni → Esegui comunque*. |
-| **macOS** (Apple Silicon e Intel) | `THE-WIRE-2.1.0-arm64.dmg` / `THE-WIRE-2.1.0-x64.dmg` | Apri il DMG e trascina in Applicazioni. La prima volta **tasto destro → Apri** (non è firmato). Se insiste: `xattr -cr "/Applications/THE WIRE.app"`. |
+| **Windows** 10/11 | `THE-WIRE-Setup-0.1.0.exe` | Doppio clic. Si installa per l'utente corrente e mette l'icona sul desktop. SmartScreen avvisa perché non è firmato: *Ulteriori informazioni → Esegui comunque*. |
+| **macOS** (Apple Silicon e Intel) | `THE-WIRE-0.1.0-arm64.dmg` / `THE-WIRE-0.1.0-x64.dmg` | Apri il DMG e trascina in Applicazioni. La prima volta **tasto destro → Apri** (non è firmato). Se insiste: `xattr -cr "/Applications/THE WIRE.app"`. |
 | **Android** | `THE-WIRE-Android.apk` | Copia sul telefono e apri: Android chiede di consentire l'installazione da fonti sconosciute. Niente Play Store, niente indirizzo web. |
 | **iPhone** (e Android senza installare) | **[https://z0cc0.github.io/the-wire/](https://z0cc0.github.io/the-wire/)** | È la web app, già in linea su GitHub Pages da questo repository. Dal telefono si apre quell'indirizzo — **con Safari** su iPhone — e si aggiunge alla schermata Home. `THE-WIRE-telefono.zip` nella release è la stessa cartella, per chi vuole un indirizzo proprio: [LEGGIMI-telefono.md](LEGGIMI-telefono.md). |
 
@@ -178,7 +182,7 @@ Serve solo Node.js 22. Nessun compilatore, nessuna libreria di sistema.
 
 ```bash
 npm install
-npm test            # 210 test: crittografia, protocollo, gruppi, lock, consegna, trasferimento diretto
+npm test            # 212 test: crittografia, protocollo, gruppi, lock, consegna, trasferimento diretto
 npm run desktop     # avvia la finestra dai sorgenti
 ```
 

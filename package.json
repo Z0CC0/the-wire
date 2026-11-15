@@ -1,7 +1,7 @@
 {
   "name": "the-wire-2",
   "private": true,
-  "version": "2.1.0",
+  "version": "0.1.0",
   "type": "module",
   "main": "apps/desktop/bundle/main.cjs",
   "description": "Messaggistica cifrata peer-to-peer. Due facce: desktop (Electron) e terminale (CLI).",

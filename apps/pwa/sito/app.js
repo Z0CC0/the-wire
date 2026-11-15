@@ -951,6 +951,43 @@ async function renderGroup() {
   topics.appendChild(piu);
   wrap.appendChild(topics);
 
+  // Membri: chi c'e', e chi si puo' ancora aggiungere. L'aggiunta manda a
+  // tutti la fotografia nuova del gruppo, nuovo compreso: da quel momento i
+  // messaggi degli altri arrivano anche a lui. Togliere non esiste (vedi
+  // group.ts: senza un arbitro, due rimozioni contemporanee non hanno una
+  // risposta giusta); per uscire si abbandona.
+  const membri = el('<div class="topics topics--membri"></div>');
+  const mancanti = state.contacts.filter((c) => !g.members.some((m) => m.id === c.id));
+  const piuMembro = el('<button class="pill" title="Aggiungi un contatto al gruppo">+ MEMBRO</button>');
+  piuMembro.onclick = () => {
+    membri.replaceChildren();
+    if (!mancanti.length) {
+      membri.appendChild(el('<span class="pill" data-on="0" disabled>TUTTI I TUOI CONTATTI SONO GIÀ QUI</span>'));
+      setTimeout(() => membri.replaceChildren(piuMembro), 2500);
+      return;
+    }
+    for (const c of mancanti) {
+      const b = el(`<button class="pill" title="Aggiungi ${esc(c.name)}">+ ${esc(c.name)}</button>`);
+      b.onclick = async () => {
+        b.disabled = true;
+        try {
+          await api.addMember(g.id, c.id);
+          await refreshAll();
+          await openGroup(g.id, topic?.id);
+        } catch (e) {
+          b.disabled = false;
+          avvisoNelThread(thread, motivo(e));
+        }
+      };
+      membri.appendChild(b);
+    }
+    const annulla = el('<button class="pill" title="Chiudi">×</button>');
+    annulla.onclick = () => membri.replaceChildren(piuMembro);
+    membri.appendChild(annulla);
+  };
+  membri.appendChild(piuMembro);
+  wrap.appendChild(membri);
+
   const thread = el('<div class="thread uk-scroll"></div>');
   wrap.appendChild(thread);
   wrap.appendChild(

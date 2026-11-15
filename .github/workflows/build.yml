@@ -4,7 +4,7 @@
 # richiedono strumenti Apple che su Windows non esistono. Qui il lavoro lo fa
 # una macchina macOS di GitHub, senza doverne possedere una.
 #
-# Si avvia da solo a ogni tag "v*" (es. v2.1.0), oppure a mano dalla scheda
+# Si avvia da solo a ogni tag "v*" (es. v0.1.0), oppure a mano dalla scheda
 # Actions del repository. Con un tag, alla fine i file finiscono tutti nella
 # release con quel nome.
 

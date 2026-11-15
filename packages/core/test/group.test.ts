@@ -161,6 +161,37 @@ describe('gruppi', () => {
     expect(daCarla[0]!.from).toBe(bob.id);
   });
 
+  it('un membro aggiunto dopo riceve il gruppo, i vecchi membri lo vedono', async () => {
+    const { alice, bob, carla } = await trio();
+    // Il gruppo nasce con Bob soltanto; Carla entra dopo.
+    const g = await alice.createGroup('PROGETTO', [alice.contact('BOB')!]);
+    await bob.sync();
+    expect(bob.group('PROGETTO')!.members).toHaveLength(2);
+
+    const dopo = await alice.addMember(alice.group('PROGETTO')!, alice.contact('CARLA')!);
+    expect(dopo.members.map((m) => m.id).sort()).toEqual([alice.id, bob.id, carla.id].sort());
+
+    // Carla si ritrova il gruppo, con tutti i membri e Bob in rubrica.
+    await carla.sync();
+    expect(carla.group('PROGETTO')?.id).toBe(g.id);
+    expect(carla.group('PROGETTO')!.members).toHaveLength(3);
+    expect(carla.contact('BOB')?.id).toBe(bob.id);
+
+    // Bob aggiorna la sua copia e da quel momento scrive anche a Carla.
+    await bob.sync();
+    expect(bob.group('PROGETTO')!.members).toHaveLength(3);
+    await bob.sendGroupText(bob.group('PROGETTO')!, DEFAULT_TOPIC.id, 'benvenuta');
+    const aCarla = (await carla.sync()).filter((m) => !m.system).map((m) => m.text);
+    expect(aCarla).toContain('benvenuta');
+  });
+
+  it('aggiungere due volte la stessa persona e un errore, non un doppione', async () => {
+    const { alice, bob } = await trio();
+    const g = await alice.createGroup('PROGETTO', [alice.contact('BOB')!]);
+    await expect(alice.addMember(g, alice.contact('BOB')!)).rejects.toThrow(/gia nel gruppo/);
+    expect(alice.group('PROGETTO')!.members).toHaveLength(2);
+  });
+
   it('gli argomenti separano le conversazioni', async () => {
     const { alice, bob, carla } = await trio();
     let g = await alice.createGroup('PROGETTO', [alice.contact('BOB')!, alice.contact('CARLA')!]);

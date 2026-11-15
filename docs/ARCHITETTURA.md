@@ -89,7 +89,7 @@ npm test
 | Comando | Cosa fa |
 |---------|---------|
 | `npm run desktop` | costruisce il bundle e avvia la finestra Electron |
-| `npm test` | 210 test: crittografia, protocollo, gruppi, lock, consegna, prova d'insieme |
+| `npm test` | 212 test: crittografia, protocollo, gruppi, lock, consegna, prova d'insieme |
 | `npm run dist:win` | installer Windows (NSIS) |
 | `npm run dist:mac` | DMG macOS (arm64 + x64) |
 
@@ -194,7 +194,9 @@ poi lo riempie: un'interruzione lì dentro lasciava un deposito vuoto.)
 ## Il nome, e i nomi interni
 
 Dal 2026-11-15 questa è **l'unica versione**: la 0.2.2 non sta più nella
-cartella dei progetti e il programma si chiama THE WIRE, versione 2.1.0. Era
+cartella dei progetti e il programma si chiama THE WIRE, versione 0.1.0: la numerazione riparte
+da capo con la prima versione pubblica, e la 2.1.0 costruita la mattina del
+2026-11-15 non è mai stata distribuita. Era
 nata come "THE WIRE 2", programma a parte da tenere accanto alla precedente
 finché era in prova, e di quella fase restano **due nomi interni che non vanno
 cambiati**:

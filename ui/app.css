@@ -1161,6 +1161,9 @@ body.sta-trascinando * {
 }
 
 /* campo per il nome di un argomento nuovo, al posto del pulsante */
+.topics--membri {
+  margin-top: -4px;
+}
 .pill--campo {
   min-width: 150px;
   color: var(--uk-text);
