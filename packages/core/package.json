@@ -1,0 +1,27 @@
+{
+  "name": "@wire/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./deposito-file.js": "./dist/deposito-file.js",
+    "./deposito-browser.js": "./dist/deposito-browser.js",
+    "./lock.js": "./dist/lock.js"
+  },
+  "scripts": {
+    "build": "tsc --build"
+  },
+  "dependencies": {
+    "@noble/ciphers": "^1.2.0",
+    "@noble/curves": "^1.8.0",
+    "@noble/hashes": "^1.7.0",
+    "nostr-tools": "^2.24.2",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1"
+  }
+}

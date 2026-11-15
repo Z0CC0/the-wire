@@ -1,0 +1,17 @@
+{
+  "name": "@wire/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./bundle/main.cjs",
+  "scripts": {
+    "build": "tsc --build"
+  },
+  "dependencies": {
+    "@wire/core": "*",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/qrcode": "^1.5.6"
+  }
+}

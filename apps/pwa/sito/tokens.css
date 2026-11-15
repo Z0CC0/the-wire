@@ -1,0 +1,207 @@
+/* ui-kit — design tokens. Copiati da THE WIDGET (src/ui-kit/tokens.css).
+   Identita': rosso brand, nero, bianco, hairline 1px, corner 6/7. */
+
+:root {
+  /* palette */
+  --uk-red: #ff1f1f;
+  --uk-red-hover: #d91414;
+  --uk-red-soft: rgba(255, 31, 31, 0.12);
+  --uk-black: #000000;
+  --uk-white: #ffffff;
+  --uk-bg: #000000;
+  --uk-surface: transparent;
+  --uk-surface-2: rgba(255, 255, 255, 0.06);
+  --uk-surface-3: #17171a;
+  --uk-text: #f5f5f7;
+  --uk-text-dim: #98989d;
+  --uk-text-faint: #6e6e73;
+
+  /* bordi */
+  --uk-hairline: #ffffff;
+  --uk-hairline-strong: #ffffff;
+  --uk-hairline-faint: rgba(255, 255, 255, 0.07);
+
+  /* radius (identita' 6/7 + scale) */
+  --uk-radius-sm: 6px;
+  --uk-radius: 7px;
+  --uk-radius-md: 10px;
+  --uk-radius-lg: 14px;
+  --uk-radius-full: 999px;
+
+  /* spacing scale */
+  --uk-sp-1: 4px;
+  --uk-sp-2: 8px;
+  --uk-sp-3: 12px;
+  --uk-sp-4: 16px;
+  --uk-sp-5: 20px;
+  --uk-sp-6: 24px;
+  --uk-sp-7: 32px;
+
+  /* elevazioni */
+  --uk-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --uk-shadow-2: 0 6px 18px rgba(0, 0, 0, 0.4);
+  --uk-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.55);
+
+  /* motion */
+  --uk-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --uk-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --uk-dur-fast: 140ms;
+  --uk-dur: 220ms;
+
+  /* tipografia */
+  --uk-font: 'Inter', 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  --uk-font-mono: 'Consolas', ui-monospace, monospace;
+}
+
+/* base */
+.uk-root {
+  font-family: var(--uk-font);
+  color: var(--uk-text);
+  font-size: 14px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+/* scroll senza scrollbar */
+.uk-scroll {
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.uk-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* pannello bordato (frame 1px, corner 14) */
+.uk-panel {
+  background: var(--uk-surface);
+  border: 1px solid var(--uk-white);
+  border-radius: var(--uk-radius-lg);
+}
+
+/* etichetta di sezione (rossa, uppercase) */
+.uk-section {
+  color: var(--uk-red);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* campo di testo */
+.uk-field {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--uk-hairline);
+  border-radius: var(--uk-radius-sm);
+  color: var(--uk-text);
+  font: 500 13px var(--uk-font);
+  outline: none;
+  transition: border-color var(--uk-dur-fast) var(--uk-ease), box-shadow var(--uk-dur-fast) var(--uk-ease);
+}
+.uk-field::placeholder {
+  color: var(--uk-text-faint);
+}
+.uk-field:focus {
+  border-color: var(--uk-hairline-strong);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+}
+
+/* bottoni — varianti di THE WIDGET (primary/outline/ghost/danger) */
+.uk-btn {
+  height: 40px;
+  padding: 0 20px;
+  border-radius: var(--uk-radius);
+  font: 700 13px var(--uk-font);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color var(--uk-dur-fast) var(--uk-ease), transform var(--uk-dur-fast) var(--uk-ease),
+    color var(--uk-dur-fast) var(--uk-ease);
+}
+.uk-btn:active {
+  transform: scale(0.97);
+}
+.uk-btn--lg {
+  height: 54px;
+  font-size: 15px;
+}
+.uk-btn--sm {
+  height: 34px;
+  padding: 0 12px;
+}
+.uk-btn--primary {
+  background: var(--uk-red);
+  border: 1px solid var(--uk-white);
+  color: var(--uk-white);
+}
+.uk-btn--primary:hover {
+  background: var(--uk-red-hover);
+}
+.uk-btn--outline {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--uk-hairline-strong);
+  color: var(--uk-text);
+}
+.uk-btn--outline:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.uk-btn--ghost {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--uk-text);
+}
+.uk-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.uk-btn--danger {
+  background: transparent;
+  border: 1px solid var(--uk-red);
+  color: var(--uk-red);
+}
+.uk-btn--danger:hover {
+  background: var(--uk-red-soft);
+}
+.uk-btn--icon {
+  width: 44px;
+  padding: 0;
+  font-size: 16px;
+}
+
+/* switch — ON pillola bianca/pomello nero, OFF pillola rossa/pomello bianco */
+.uk-switch {
+  width: 50px;
+  height: 26px;
+  border-radius: 13px;
+  border: none;
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  background: var(--uk-red);
+  transition: background-color 180ms var(--uk-ease);
+}
+.uk-switch[data-on='1'] {
+  background: var(--uk-white);
+}
+.uk-switch::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--uk-white);
+  box-shadow: var(--uk-shadow-1);
+  transition: left 200ms var(--uk-ease-out), background-color 180ms var(--uk-ease);
+}
+.uk-switch[data-on='1']::after {
+  left: 28px;
+  background: var(--uk-black);
+}

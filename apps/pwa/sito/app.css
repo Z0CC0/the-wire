@@ -1,0 +1,1277 @@
+/* THE WIRE — shell dell'app. Struttura copiata da THE WIDGET/src/hub:
+   titlebar custom + due pannelli (lista a sinistra, vista contestuale a destra). */
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+body {
+  background: #000000;
+  overflow: hidden;
+}
+* {
+  box-sizing: border-box;
+}
+
+/* ---------- shell ---------- */
+.shell {
+  height: 100vh;
+  /* Sul telefono 100vh e' l'altezza CON la barra degli indirizzi gia' scomparsa:
+     il fondo della pagina finisce sotto la barra del browser e il campo per
+     scrivere non si vede. `dvh` segue l'altezza vera, momento per momento. */
+  height: 100dvh;
+  /* Quando la tastiera e' aperta nemmeno `dvh` basta: la pagina la disegna
+     sopra, non accanto. `--altezza-visibile` la imposta il telefono, momento
+     per momento; altrove non esiste e vale la riga qui sopra. */
+  height: var(--altezza-visibile, 100dvh);
+  display: flex;
+  flex-direction: column;
+}
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 14px;
+  padding: 4px 16px 16px;
+}
+
+/* titlebar frameless */
+.titlebar {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 0;
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+}
+.titlebar__runtime {
+  padding-left: 12px;
+  font: 700 10.5px var(--uk-font);
+  letter-spacing: 0.14em;
+  color: var(--uk-text-faint);
+  text-transform: uppercase;
+}
+.titlebar__ctrls {
+  display: flex;
+  gap: 2px;
+  -webkit-app-region: no-drag;
+}
+.tb-btn {
+  width: 40px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  color: var(--uk-text-dim);
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.tb-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.tb-btn--close:hover {
+  background: var(--uk-red);
+  color: #fff;
+}
+
+/* ---------- pannello sinistro ---------- */
+.side {
+  width: 42%;
+  min-width: 440px;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 24px 12px;
+}
+.side__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.logo {
+  font: 800 30px var(--uk-font);
+  letter-spacing: -0.02em;
+}
+.logo b {
+  color: var(--uk-white);
+  font-weight: 800;
+}
+.logo i {
+  color: var(--uk-red);
+  font-style: normal;
+}
+.side__acts {
+  display: flex;
+  gap: 8px;
+}
+
+/* pill dei filtri / dei gruppi */
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.pill {
+  font: 700 11px var(--uk-font);
+  letter-spacing: 0.06em;
+  padding: 7px 13px;
+  border-radius: var(--uk-radius-full);
+  cursor: pointer;
+  border: 1px solid var(--uk-hairline);
+  background: transparent;
+  color: var(--uk-text-dim);
+  transition: background-color var(--uk-dur-fast) var(--uk-ease), color var(--uk-dur-fast) var(--uk-ease);
+}
+.pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.pill[data-on='1'] {
+  background: var(--uk-red);
+  border-color: transparent;
+  color: var(--uk-white);
+}
+
+/* lista conversazioni */
+.list {
+  flex: 1;
+  min-height: 0;
+  margin: 0 -6px;
+  padding: 0 6px;
+}
+.row {
+  border: 1px solid var(--uk-hairline);
+  border-radius: var(--uk-radius-md);
+  background: var(--uk-surface);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: background-color var(--uk-dur-fast) var(--uk-ease);
+}
+.row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.row[data-active='1'] {
+  background: rgba(255, 31, 31, 0.1);
+  border-color: var(--uk-red);
+}
+.row__glyph {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--uk-hairline);
+  border-radius: var(--uk-radius-sm);
+  font-size: 15px;
+  color: var(--uk-text);
+}
+/* Pallino di presenza appoggiato all angolo del simbolo. Fuori dal flusso,
+   cosi non sposta niente quando compare o sparisce. */
+.row__glyph {
+  position: relative;
+}
+.row__presenza {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--uk-hairline);
+  transition: background 0.2s linear;
+}
+.row__presenza[data-on='1'] {
+  background: var(--uk-white);
+  border-color: var(--uk-white);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.55);
+}
+.pane__presenza {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+/* Spento e' grigio, non rosso: il rosso in questa app vuol dire "da
+   verificare", e non e' un difetto che un amico sia via. */
+.pane__presenza .dot {
+  background: var(--uk-text-faint);
+}
+.pane__presenza .dot[data-on='1'] {
+  background: var(--uk-white);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.55);
+}
+.row[data-off='1'] .row__glyph {
+  color: var(--uk-text-faint);
+  border-color: var(--uk-hairline-faint);
+}
+.row__main {
+  flex: 1;
+  min-width: 0;
+}
+.row__name {
+  font: 700 15px var(--uk-font);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.row__sub {
+  font: 500 11.5px var(--uk-font);
+  color: var(--uk-text-dim);
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.row__sep {
+  margin: 0 8px;
+  color: var(--uk-text-faint);
+}
+.badge {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--uk-radius-full);
+  background: var(--uk-red);
+  color: var(--uk-white);
+  font: 700 11px var(--uk-font);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--uk-red);
+  flex-shrink: 0;
+}
+.dot[data-on='1'] {
+  background: var(--uk-white);
+}
+
+/* ---------- pannello destro ---------- */
+.pane {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+.pane__inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+@keyframes paneFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.pane-fade {
+  animation: paneFade 200ms ease-out;
+}
+
+.pane__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 26px 12px;
+  flex-shrink: 0;
+}
+.pane__title {
+  font: 800 22px var(--uk-font);
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pane__sub {
+  font: 500 11.5px var(--uk-font);
+  color: var(--uk-text-dim);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.pane__acts {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+  margin-left: 16px;
+}
+
+/* stato vuoto */
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.empty__glyph {
+  font-size: 46px;
+  color: var(--uk-text-faint);
+}
+.empty__title {
+  font: 700 17px var(--uk-font);
+  color: var(--uk-text-dim);
+}
+.empty__sub {
+  font: 400 13px var(--uk-font);
+  color: var(--uk-text-faint);
+}
+
+/* ---------- conversazione ---------- */
+.topics {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 0 26px 14px;
+  flex-shrink: 0;
+}
+.thread {
+  flex: 1;
+  min-height: 0;
+  padding: 6px 26px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.daysep {
+  align-self: center;
+  font: 700 10px var(--uk-font);
+  letter-spacing: 0.14em;
+  color: var(--uk-text-faint);
+  text-transform: uppercase;
+  padding: 4px 0;
+}
+.msg {
+  max-width: 74%;
+  border-radius: var(--uk-radius-md);
+  padding: 10px 14px;
+  border: 1px solid var(--uk-hairline);
+  background: var(--uk-surface);
+}
+.msg--me {
+  align-self: flex-end;
+  background: var(--uk-red);
+  border-color: var(--uk-white);
+}
+.msg__who {
+  font: 700 11px var(--uk-font);
+  letter-spacing: 0.06em;
+  color: var(--uk-red);
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.msg--me .msg__who {
+  color: rgba(255, 255, 255, 0.75);
+}
+.msg__text {
+  font: 500 13.5px var(--uk-font);
+  color: var(--uk-text);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  user-select: text;
+}
+.msg--me .msg__text {
+  color: var(--uk-white);
+}
+.msg__meta {
+  font: 500 10.5px var(--uk-font);
+  color: var(--uk-text-faint);
+  margin-top: 6px;
+  text-align: right;
+}
+.msg--me .msg__meta {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* allegato / trasferimento file */
+.file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--uk-hairline);
+  border-radius: var(--uk-radius-sm);
+  padding: 10px 12px;
+  margin-top: 2px;
+  min-width: 260px;
+}
+.msg--me .file {
+  border-color: rgba(255, 255, 255, 0.55);
+}
+.file__glyph {
+  font-size: 17px;
+}
+.file__name {
+  font: 700 12.5px var(--uk-font);
+}
+.file__meta {
+  font: 500 10.5px var(--uk-font);
+  color: var(--uk-text-dim);
+  margin-top: 2px;
+}
+.msg--me .file__meta {
+  color: rgba(255, 255, 255, 0.75);
+}
+.bar {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.18);
+  margin-top: 7px;
+  overflow: hidden;
+}
+.bar > span {
+  display: block;
+  height: 100%;
+  background: var(--uk-red);
+}
+.msg--me .bar > span {
+  background: var(--uk-white);
+}
+
+/* composer */
+.composer {
+  flex-shrink: 0;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 26px 20px;
+}
+.composer .uk-field {
+  height: 46px;
+}
+
+/* ---------- chiamata ---------- */
+.call {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 26px 20px;
+  gap: 14px;
+}
+.call__grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.tile {
+  position: relative;
+  border: 1px solid var(--uk-hairline);
+  border-radius: var(--uk-radius-lg);
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.022),
+    rgba(255, 255, 255, 0.022) 9px,
+    transparent 9px,
+    transparent 18px
+  );
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  min-height: 120px;
+}
+.tile--screen {
+  grid-column: 1 / -1;
+  border-color: var(--uk-red);
+}
+.tile__glyph {
+  font-size: 40px;
+  color: var(--uk-text-faint);
+}
+.tile__tag {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border-radius: var(--uk-radius-full);
+  border: 1px solid var(--uk-hairline);
+  background: rgba(0, 0, 0, 0.7);
+  font: 700 11px var(--uk-font);
+  letter-spacing: 0.05em;
+}
+.tile__flag {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  padding: 5px 11px;
+  border-radius: var(--uk-radius-full);
+  background: var(--uk-red);
+  color: var(--uk-white);
+  font: 700 10px var(--uk-font);
+  letter-spacing: 0.1em;
+}
+.call__bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.cbtn {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--uk-radius-full);
+  border: 1px solid var(--uk-hairline);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--uk-text);
+  font-size: 19px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background-color var(--uk-dur-fast) var(--uk-ease), transform var(--uk-dur-fast) var(--uk-ease);
+}
+.cbtn:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+.cbtn:active {
+  transform: scale(0.94);
+}
+.cbtn[data-off='1'] {
+  border-color: var(--uk-red);
+  color: var(--uk-red);
+  background: var(--uk-red-soft);
+}
+.cbtn--end {
+  background: var(--uk-red);
+  border-color: var(--uk-white);
+  color: var(--uk-white);
+  width: 74px;
+}
+.cbtn--end:hover {
+  background: var(--uk-red-hover);
+}
+.call__timer {
+  font: 700 13px var(--uk-font-mono);
+  letter-spacing: 0.08em;
+  color: var(--uk-text-dim);
+  margin-right: 8px;
+}
+
+/* ---------- schermata di sblocco ---------- */
+.lock {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  animation: paneFade 220ms ease-out;
+}
+.lock__panel {
+  width: 460px;
+  max-width: calc(100vw - 48px);
+  padding: 36px 32px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.lock__sub {
+  text-align: center;
+  font: 700 11px var(--uk-font);
+  letter-spacing: 0.16em;
+  color: var(--uk-red);
+  margin-bottom: 4px;
+}
+.lock__text {
+  font: 500 12.5px var(--uk-font);
+  color: var(--uk-text-dim);
+  line-height: 1.55;
+  text-align: center;
+  margin-bottom: 6px;
+}
+.lock__err {
+  min-height: 18px;
+  font: 600 12px var(--uk-font);
+  color: var(--uk-red);
+  text-align: center;
+}
+.lock__warn {
+  font: 500 11.5px var(--uk-font);
+  color: var(--uk-text-faint);
+  line-height: 1.5;
+  text-align: center;
+  border-top: 1px solid var(--uk-hairline-faint);
+  padding-top: 14px;
+}
+
+/* ---------- numero di sicurezza ---------- */
+.safety {
+  flex: 1;
+  min-height: 0;
+  padding: 10px 26px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.safety__grid {
+  display: grid;
+  gap: 12px;
+  justify-content: center;
+  font: 700 22px var(--uk-font-mono);
+  letter-spacing: 0.12em;
+  color: var(--uk-text);
+  border: 1px solid var(--uk-hairline);
+  border-radius: var(--uk-radius-md);
+  padding: 26px;
+  user-select: text;
+}
+.safety__text {
+  font: 500 13px var(--uk-font);
+  color: var(--uk-text-dim);
+  line-height: 1.6;
+  max-width: 560px;
+}
+.safety__text b {
+  color: var(--uk-red);
+}
+.safety__acts,
+.addc__acts {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+/* ---------- nuovo contatto ---------- */
+.addc {
+  flex: 1;
+  min-height: 0;
+  padding: 10px 26px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.addc__text {
+  font: 500 12.5px var(--uk-font);
+  color: var(--uk-text-dim);
+  line-height: 1.55;
+  max-width: 560px;
+}
+.addc__uri {
+  font: 500 11.5px var(--uk-font-mono);
+  color: var(--uk-text);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--uk-hairline);
+  border-radius: var(--uk-radius-sm);
+  padding: 12px 14px;
+  word-break: break-all;
+  user-select: text;
+  line-height: 1.5;
+}
+
+/* scelta dei membri di un gruppo */
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.addc__text b {
+  font-weight: 700;
+}
+
+/* ---------- telefono ---------- */
+.qr {
+  width: 260px;
+  padding: 14px;
+  background: #fff;
+  border-radius: var(--uk-radius-md);
+  align-self: flex-start;
+}
+.qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ---------- scelte ---------- */
+
+.scelta {
+  border: 1px solid var(--uk-hairline);
+  border-radius: var(--uk-radius-md);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.scelta__titolo {
+  font: 700 13px var(--uk-font);
+  letter-spacing: 0.06em;
+}
+
+/* ---------- messaggi: entrata, eliminati ---------- */
+
+/* Un messaggio nuovo entra invece di comparire di colpo: senza, un messaggio
+   che arriva mentre si legge sembra un salto della pagina. */
+@keyframes msg-entra {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.msg--entra {
+  animation: msg-entra 0.22s var(--uk-ease) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .msg--entra {
+    animation: none;
+  }
+}
+
+/* Eliminato: resta il segnaposto, in corsivo e spento. Il buco senza
+   spiegazione si legge peggio di una riga che dice cosa e' successo. */
+.msg--eliminato {
+  background: transparent;
+  border: 1px dashed var(--uk-hairline);
+  color: var(--uk-text-faint);
+}
+.msg--eliminato .msg__text {
+  font-style: italic;
+  font-size: 12.5px;
+}
+.msg--me.msg--eliminato {
+  border-color: rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ---------- menu ---------- */
+
+.pane__menu-btn {
+  width: 40px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+}
+.menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 210px;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--uk-hairline);
+  border-radius: var(--uk-radius-md);
+  background: var(--uk-surface-3);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+}
+/* Il menu del tasto destro si posiziona dove si e' cliccato, quindi sta
+   attaccato alla pagina, non al pulsante. */
+.menu-mouse {
+  position: fixed;
+  top: 0;
+  left: 0;
+  max-width: 260px;
+}
+.menu__voce {
+  text-align: left;
+  padding: 9px 11px;
+  border: none;
+  border-radius: var(--uk-radius-sm);
+  background: transparent;
+  color: var(--uk-text);
+  font: 600 12px var(--uk-font);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.menu__voce:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+.menu__voce--rossa {
+  color: var(--uk-red);
+}
+.menu__nota {
+  padding: 7px 11px 5px;
+  border-top: 1px solid var(--uk-hairline-faint);
+  margin-top: 3px;
+  font: 500 10.5px var(--uk-font);
+  line-height: 1.45;
+  color: var(--uk-text-faint);
+  white-space: normal;
+}
+
+/* ---------- allegati ---------- */
+.allegato {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 190px;
+}
+.allegato__img {
+  max-width: 100%;
+  max-height: 280px;
+  border-radius: var(--uk-radius-sm);
+  display: block;
+  object-fit: contain;
+}
+.allegato__anteprima,
+.allegato__glifo {
+  height: 96px;
+  border: 1px dashed var(--uk-hairline);
+  border-radius: var(--uk-radius-sm);
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  color: var(--uk-text-faint);
+}
+.allegato__testo {
+  min-width: 0;
+}
+.allegato__nome {
+  font: 700 13px var(--uk-font);
+  word-break: break-word;
+}
+.allegato__nota {
+  font: 500 10.5px var(--uk-font);
+  letter-spacing: 0.08em;
+  color: var(--uk-text-dim);
+  margin-top: 3px;
+}
+/* La barra dice quanto manca. Senza, un file grosso sembra fermo. */
+.allegato__barra {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+.allegato__barra i {
+  display: block;
+  height: 100%;
+  background: var(--uk-white);
+  transition: width 0.2s linear;
+}
+.allegato__btn {
+  height: 30px;
+  font-size: 10.5px;
+  padding: 0 12px;
+  align-self: flex-start;
+}
+.msg--me .allegato__btn {
+  border-color: rgba(255, 255, 255, 0.5);
+  color: var(--uk-white);
+}
+.msg--me .allegato__nota {
+  color: rgba(255, 255, 255, 0.72);
+}
+.msg--me .allegato__barra {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.composer__piu {
+  width: 46px;
+  padding: 0;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+/* Trascinamento: il riquadro esiste per dire "qui si puo' lasciare". */
+.accetta-file {
+  outline: 2px dashed var(--uk-red);
+  outline-offset: -6px;
+}
+
+/* ---------- schermo stretto (telefono) ----------
+   Due pannelli affiancati non ci stanno: sotto i 760px si alternano, e
+   l'intestazione della conversazione guadagna un tasto per tornare indietro.
+   Sopra i 760px la regola non esiste e il desktop resta come prima. */
+.stretto-solo {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .body {
+    /* Le tacche e la barra di sistema dell'iPhone stanno sopra la pagina:
+       senza questi margini il contenuto ci finisce sotto. */
+    padding: 4px calc(10px + env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom))
+      calc(10px + env(safe-area-inset-left));
+    gap: 0;
+  }
+  .side,
+  .pane {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+  .side {
+    padding: 18px 16px 8px;
+  }
+  body[data-vista='conversazione'] .side {
+    display: none;
+  }
+  body[data-vista='lista'] .pane {
+    display: none;
+  }
+  .stretto-solo {
+    display: inline-flex;
+    width: 44px;
+    padding: 0;
+    font-size: 20px;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+  /* L'intestazione a una riga sola non ci sta: nome e pulsanti si
+     sovrapponevano e il nome veniva tagliato dopo due lettere. Sul telefono va
+     su due righe — sopra chi e', sotto cosa si puo' fare. */
+  .pane__head {
+    padding: 12px 14px 10px;
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+  .pane__head > div:not(.pane__acts) {
+    flex: 1 1 auto;
+  }
+  .pane__acts {
+    flex: 1 0 100%;
+    margin-left: 0;
+    gap: 8px;
+    /* Se i pulsanti sono tanti si scorrono di lato invece di stringersi fino
+       a diventare illeggibili. */
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .pane__acts::-webkit-scrollbar {
+    display: none;
+  }
+  .pane__acts .uk-btn {
+    padding: 0 14px;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .pane__title {
+    font-size: 19px;
+  }
+  /* Sotto i 16px iOS ingrandisce da solo tutta la pagina appena si tocca un
+     campo, e da li' in poi non si capisce piu' niente. Sedici e' la soglia. */
+  .uk-field {
+    font-size: 16px;
+  }
+  .thread,
+  .topics,
+  .composer,
+  .safety,
+  .addc {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .composer {
+    padding-top: 10px;
+    padding-bottom: 14px;
+    gap: 8px;
+  }
+  .composer .uk-field {
+    height: 44px;
+  }
+  .pills {
+    gap: 6px;
+  }
+  .side {
+    padding: 14px 14px 8px;
+  }
+  .logo {
+    font-size: 24px;
+  }
+  .msg {
+    max-width: 88%;
+  }
+  /* Il browser del telefono ha gia' la sua cornice. */
+  body.da-telefono .titlebar__ctrls {
+    display: none;
+  }
+}
+
+/* ---------- QR: uno per strada ---------- */
+.qr-riga {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 6px;
+}
+.qr-carta {
+  border: 1px solid var(--uk-hairline);
+  border-radius: var(--uk-radius-md);
+  padding: 14px;
+  width: 288px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.qr-carta__titolo {
+  font: 700 11px var(--uk-font);
+  letter-spacing: 0.1em;
+  color: var(--uk-red);
+}
+.qr-carta__nota {
+  font: 500 11.5px var(--uk-font);
+  color: var(--uk-text-dim);
+  line-height: 1.45;
+  min-height: 34px;
+}
+.qr-carta__ip {
+  font: 500 11px var(--uk-font-mono);
+  color: var(--uk-text-faint);
+  user-select: text;
+}
+.qr-carta .qr {
+  width: 100%;
+  align-self: stretch;
+}
+
+/* il mirino della fotocamera, sul telefono */
+.qr-video {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  /* Ritagliato quadrato: il fotogramma della fotocamera non lo e', e lasciarlo
+     deformare renderebbe piu' difficile centrare il codice. */
+  object-fit: cover;
+  border-radius: var(--uk-radius-sm);
+  background: #000;
+}
+
+/* la casella dove si incolla il codice di collegamento */
+.addc__area {
+  width: 100%;
+  /* `.uk-field` e' alto 38px fissi, che va bene per una riga e non per un
+     codice di seicento caratteri: qui l'altezza la decide il contenuto. */
+  height: auto;
+  min-height: 96px;
+  padding: 10px 12px;
+  resize: vertical;
+  font: 500 12px var(--uk-font-mono);
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+/* avviso di invio fallito, dentro la conversazione */
+.avviso {
+  align-self: center;
+  max-width: 88%;
+  border: 1px solid var(--uk-red);
+  border-radius: var(--uk-radius-sm);
+  background: var(--uk-red-soft);
+  color: var(--uk-red);
+  font: 600 11.5px var(--uk-font);
+  letter-spacing: 0.04em;
+  padding: 8px 12px;
+  text-align: center;
+  line-height: 1.45;
+}
+
+/* ---------- maniglia e archiviazione nelle righe ---------- */
+.row__maniglia {
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  color: var(--uk-text-faint);
+  font-size: 15px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.row:hover .row__maniglia {
+  color: var(--uk-text-dim);
+}
+.row__archivia {
+  position: relative;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border: 1px solid transparent;
+  border-radius: var(--uk-radius-sm);
+  background: transparent;
+  color: var(--uk-text-faint);
+  font-size: 13px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background-color var(--uk-dur-fast) var(--uk-ease), color var(--uk-dur-fast) var(--uk-ease);
+}
+.row:hover .row__archivia {
+  border-color: var(--uk-hairline);
+  color: var(--uk-text);
+  background: rgba(255, 255, 255, 0.05);
+}
+.row__archivia:hover {
+  border-color: var(--uk-hairline-strong);
+  background: rgba(255, 255, 255, 0.1);
+}
+/* L'etichetta dice cosa fa il simbolo: da solo non lo diceva a nessuno.
+   Compare al passaggio del mouse, quindi non occupa spazio a riposo. */
+.row__archivia::after {
+  content: attr(data-etichetta);
+  position: absolute;
+  transform: translateY(-24px);
+  padding: 3px 7px;
+  border: 1px solid var(--uk-hairline);
+  border-radius: var(--uk-radius-sm);
+  background: var(--uk-surface-3);
+  font: 700 9px var(--uk-font);
+  letter-spacing: 0.1em;
+  color: var(--uk-text-dim);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--uk-dur-fast) var(--uk-ease);
+}
+.row__archivia:hover::after {
+  opacity: 1;
+}
+.row__archivia:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--uk-text);
+}
+/* La riga che si sta spostando: si deve vedere dove sta andando. */
+.row--trascina {
+  opacity: 0.85;
+  border-color: var(--uk-red);
+  box-shadow: var(--uk-shadow-2);
+}
+body.sta-trascinando,
+body.sta-trascinando * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+/* Su schermo stretto lo spazio e poco: la maniglia sparisce, l archivio resta. */
+@media (max-width: 760px) {
+  .row__maniglia {
+    display: none;
+  }
+}
+
+/* campo per il nome di un argomento nuovo, al posto del pulsante */
+.pill--campo {
+  min-width: 150px;
+  color: var(--uk-text);
+  background: rgba(255, 255, 255, 0.06);
+  outline: none;
+}
+.pill--campo::placeholder {
+  color: var(--uk-text-faint);
+}
+
+/* avviso di sistema sotto la barra del titolo */
+.avviso-sistema {
+  flex-shrink: 0;
+  margin: 0 16px 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--uk-red);
+  border-radius: var(--uk-radius-sm);
+  background: var(--uk-red-soft);
+  color: var(--uk-red);
+  font: 600 11.5px var(--uk-font);
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+/* ---------- classi al posto degli stili inline ----------
+   Generate spostando ogni style="..." in una classe: serve a togliere
+   `unsafe-inline` dalla CSP. Il nome non racconta niente apposta: il
+   contenuto E' lo stile che c'era scritto nel tag. */
+.u-1 {
+  text-align:center;
+  margin-bottom:6px;
+}
+.u-2 {
+  width:100%;
+}
+.u-3 {
+  padding:40px 0;
+}
+.u-4 {
+  color:var(--uk-red);
+}
+.u-5 {
+  min-width:0;
+}
+.u-6 {
+  width:120px;
+}
+.u-7 {
+  display:none;
+}
+.u-8 {
+  display:flex;
+  flex-direction:column;
+  height:100%;
+}
+.u-9 {
+  font-size:11px;
+}
+.u-10 {
+  color:#fff;
+}
+.u-11 {
+  margin-top:14px;
+}
+.u-12 {
+  width:280px;
+}
+.u-13 {
+  margin-top:12px;
+}
+.u-14 {
+  width:220px;
+}
+.u-15 {
+  width:200px;
+}
+.u-16 {
+  margin-top:28px;
+}
+.u-17 {
+  margin-top:10px;
+}
+.u-18 {
+  margin-top:32px;
+}
+.u-19 {
+  margin-top:4px;
+}
+.u-20 {
+  margin-top:16px;
+}
+.u-21 {
+  width:160px;
+}
+.u-22 {
+  margin-top:18px;
+}
+.u-23 {
+  width:260px;
+}
+.u-24 {
+  margin-top:22px;
+}
+.u-25 {
+  margin-top:6px;
+}
+.u-26 {
+  width:260px;
+  margin-top:12px;
+}
+.u-27 {
+  width: 100%;
+  margin-bottom: 18px;
+}

@@ -1,0 +1,111 @@
+{
+  "name": "the-wire-2",
+  "private": true,
+  "version": "2.1.0",
+  "type": "module",
+  "main": "apps/desktop/bundle/main.cjs",
+  "description": "Messaggistica cifrata peer-to-peer. Due facce: desktop (Electron) e terminale (CLI).",
+  "author": {
+    "name": "mazzo"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "postinstall": "install-electron",
+    "build": "tsc --build",
+    "clean": "tsc --build --clean",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "bundle": "npm run bundle:desktop",
+    "bundle:desktop": "esbuild apps/desktop/src/main.ts --bundle --platform=node --format=cjs --target=node20 --external:electron --outfile=apps/desktop/bundle/main.cjs",
+    "desktop": "npm run pack && electron .",
+    "pack": "npm run build && npm run bundle",
+    "dist:win": "npm run pack && electron-builder --win --publish never",
+    "dist:mac": "npm run pack && electron-builder --mac --publish never",
+    "pwa": "npm run pack && node apps/pwa/costruisci.mjs",
+    "telefono": "npm run pwa && node apps/pwa/costruisci-android.mjs",
+    "android:sync": "npm run telefono && cap sync android",
+    "android": "npm run android:sync && cd android && .\\gradlew.bat assembleRelease",
+    "ios:sync": "npm run telefono && cap sync ios"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
+    "@types/node": "^22.10.0",
+    "electron": "^44.0.0",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.11"
+  },
+  "build": {
+    "appId": "com.mazzo.thewire2",
+    "productName": "THE WIRE",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "apps/desktop/bundle/**",
+      "apps/desktop/preload.cjs",
+      "ui/**",
+      "package.json",
+      "!**/*.map"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "THE WIRE",
+      "deleteAppDataOnUninstall": false
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "category": "public.app-category.social-networking",
+      "icon": "build/icon.png",
+      "darkModeSupport": true,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Per le chiamate audio.",
+        "NSCameraUsageDescription": "Per le videochiamate."
+      }
+    },
+    "dmg": {
+      "title": "THE WIRE"
+    },
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": false,
+      "onlyLoadAppFromAsar": true,
+      "grantFileProtocolExtraPrivileges": true
+    },
+    "asar": true
+  },
+  "allowScripts": {
+    "electron@44.0.0": true,
+    "electron-winstaller@5.4.0": true,
+    "esbuild@0.28.2": true
+  }
+}

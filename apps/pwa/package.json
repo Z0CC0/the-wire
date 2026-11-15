@@ -1,0 +1,11 @@
+{
+  "name": "@wire/pwa",
+  "version": "2.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/ponte.js",
+  "dependencies": {
+    "@wire/core": "*",
+    "jsqr": "^1.4.0"
+  }
+}

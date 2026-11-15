@@ -1,0 +1,42 @@
+/* La barra dell'aggiornamento. Sta in fondo, sopra tutto il resto: e' una cosa
+   che si legge e si decide, non una notifica da far scorrere via. */
+.agg {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 9999;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--uk-hairline-strong, #444);
+  border-radius: var(--uk-radius-md, 10px);
+  background: var(--uk-bg-raised, #141414);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+}
+.agg__testo {
+  flex: 1 1 220px;
+  font: 500 12.5px var(--uk-font, system-ui);
+  line-height: 1.5;
+  color: var(--uk-text, #eee);
+}
+.agg__btn {
+  padding: 9px 14px;
+  border: 1px solid var(--uk-hairline-strong, #444);
+  border-radius: var(--uk-radius-sm, 6px);
+  background: transparent;
+  color: var(--uk-text, #eee);
+  font: 700 11px var(--uk-font, system-ui);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+.agg__btn--si {
+  border-color: var(--uk-red, #c0392b);
+  color: var(--uk-red, #c0392b);
+}
+.agg__btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+    <title>THE WIRE</title>
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="app.css" />
+  </head>
+  <body>
+    <div class="uk-root shell">
+      <!-- titlebar custom (frameless su electron/tauri, decorativa su browser) -->
+      <div class="titlebar">
+        <div class="titlebar__runtime"><span id="runtimeTag">THE WIRE</span> <span class="u-4" id="meAddress"></span></div>
+        <div class="titlebar__ctrls">
+          <button class="tb-btn" data-win="minimize">&#9472;</button>
+          <button class="tb-btn" data-win="maximize">&#9744;</button>
+          <button class="tb-btn tb-btn--close" data-win="close">&#10005;</button>
+        </div>
+      </div>
+
+      <div class="body">
+        <!-- pannello sinistro: lista conversazioni -->
+        <div class="uk-panel side">
+          <div class="side__head">
+            <div class="logo"><b>THE</b><i> WIRE</i></div>
+            <div class="side__acts" id="sideActs"></div>
+          </div>
+
+          <button class="uk-btn uk-btn--primary uk-btn--lg u-27" id="btnNew">
+            + NUOVO
+          </button>
+
+          <div class="pills" id="filters"></div>
+
+          <div class="list uk-scroll" id="list"></div>
+        </div>
+
+        <!-- pannello destro: vista contestuale -->
+        <div class="uk-panel pane">
+          <div class="pane__inner pane-fade" id="pane"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="diretto.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

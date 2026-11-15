@@ -1,0 +1,13 @@
+{
+  "appId": "com.mazzo.thewire2",
+  "appName": "THE WIRE",
+  "webDir": "apps/pwa/android-www",
+  "android": {
+    "allowMixedContent": false
+  },
+  "server": {
+    "androidScheme": "https",
+    "hostname": "localhost",
+    "cleartext": false
+  }
+}

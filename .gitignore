@@ -1,0 +1,25 @@
+# dipendenze e uscite di build: si rigenerano con npm install / npm run pack
+node_modules/
+release/
+packages/*/dist/
+apps/*/dist/
+apps/desktop/bundle/
+*.tsbuildinfo
+apps/pwa/android-www/
+# la cartella per il telefono resta nel repo: e' cio' che si pubblica su HTTPS
+
+# Android
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+android/capacitor-cordova-android-plugins/build/
+
+# iOS
+ios/App/Pods/
+ios/App/build/
+ios/App/App/public/
+
+# sistema
+.DS_Store
+Thumbs.db

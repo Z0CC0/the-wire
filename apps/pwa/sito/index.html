@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+    <title>THE WIRE</title>
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="app.css" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self'; connect-src 'self' wss:; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="THE WIRE" />
+    <link rel="apple-touch-icon" href="icona-192.png" />
+    <link rel="stylesheet" href="aggiornamenti.css" />
+  </head>
+  <body>
+    <div class="uk-root shell">
+      <!-- titlebar custom (frameless su electron/tauri, decorativa su browser) -->
+      <div class="titlebar">
+        <div class="titlebar__runtime"><span id="runtimeTag">THE WIRE</span> <span class="u-4" id="meAddress"></span></div>
+        <div class="titlebar__ctrls">
+          <button class="tb-btn" data-win="minimize">&#9472;</button>
+          <button class="tb-btn" data-win="maximize">&#9744;</button>
+          <button class="tb-btn tb-btn--close" data-win="close">&#10005;</button>
+        </div>
+      </div>
+
+      <div class="body">
+        <!-- pannello sinistro: lista conversazioni -->
+        <div class="uk-panel side">
+          <div class="side__head">
+            <div class="logo"><b>THE</b><i> WIRE</i></div>
+            <div class="side__acts" id="sideActs"></div>
+          </div>
+
+          <button class="uk-btn uk-btn--primary uk-btn--lg u-27" id="btnNew">
+            + NUOVO
+          </button>
+
+          <div class="pills" id="filters"></div>
+
+          <div class="list uk-scroll" id="list"></div>
+        </div>
+
+        <!-- pannello destro: vista contestuale -->
+        <div class="uk-panel pane">
+          <div class="pane__inner pane-fade" id="pane"></div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="ponte.js"></script>
+    <script defer src="qr.js"></script>
+    <script defer src="app.js"></script>
+    <!-- Registra il service worker e avvisa quando i file sul sito cambiano.
+         Solo su questa strada: sul computer e nell'app Android non c'e' nessun
+         sito da cui l'app possa cambiare sotto i piedi. -->
+    <script defer src="aggiornamenti.js"></script>
+  </body>
+</html>

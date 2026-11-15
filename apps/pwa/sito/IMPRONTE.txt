@@ -1,0 +1,22 @@
+# Impronte SHA-256 dei file pubblicati.
+#
+# Per controllare che il sito non sia stato toccato, da una cartella con i
+# file scaricati:  sha256sum -c IMPRONTE.txt
+# Su Windows, per un file alla volta:  certutil -hashfile <file> SHA256
+#
+# Se un'impronta non torna, quel file non e' quello costruito qui.
+
+d3736b90edb273aa067bc782e2a7b886118da26b536dbfa160f644619eac60f3  LEGGIMI-PRIMA.md
+e5cbc50ba31202e1e61573ffdda6cfa0fd55fb4874deb85a0e02ccb74e69838d  SICUREZZA.md
+64b2b8bf199560bb289b137df0a055bf5edecbf12c2efefad7365fc095b7a2d7  aggiornamenti.css
+8e788cd5f0e28dea623f94d6a015fe669280a5412b37e6c044f04a7b6cef71c9  aggiornamenti.js
+df3a8b55fa4329b7f8622843178dafab9b45007e44993422373355203ce23b13  app.css
+c023e10117d00dee1151b1f5747a14496b172429decc77ffd9899fcfe652eb4b  app.js
+68aea89a05420d840a36e56db13a9c6553b0846c40794d1738cbfe428ad608d5  icona-192.png
+68aea89a05420d840a36e56db13a9c6553b0846c40794d1738cbfe428ad608d5  icona-512.png
+a24eb81ccd7c5f9c1fadae633d5818f4fb74079ec6422d035bd2d4b24df1ed6c  index.html
+32408376365b21fd22f6a5cd81eb63639c2cd2907b998504fbf0125ea228f37d  manifest.webmanifest
+211c0aad08a07186c0687326890d6e728fb561c70ae762dd5c327fb3443dfe5e  ponte.js
+c89a5a30f3db173b4f024baf73c6dc49c77295e9a6a20de9f218ff13c9ee3491  qr.js
+265ffcb627e3bf39aabd91141bad7b00f3f1af7c5e971f85571b20b32e81fe53  sw.js
+141edd38d4cd1bc89f6af3e7a25551a860d2663d431655dd06dc58c0170c6685  tokens.css
