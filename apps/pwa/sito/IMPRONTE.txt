@@ -6,8 +6,8 @@
 #
 # Se un'impronta non torna, quel file non e' quello costruito qui.
 
-d3736b90edb273aa067bc782e2a7b886118da26b536dbfa160f644619eac60f3  LEGGIMI-PRIMA.md
-e5cbc50ba31202e1e61573ffdda6cfa0fd55fb4874deb85a0e02ccb74e69838d  SICUREZZA.md
+b967d32a2c6a1f7c6aca47eacb4507250cffc3ab32a5c7f5211d3d5f0f36714d  LEGGIMI-PRIMA.md
+a2790e4c96caff1643d777c89fbf4dae0fa9496b0bec06a6d756490a4944aed1  SICUREZZA.md
 64b2b8bf199560bb289b137df0a055bf5edecbf12c2efefad7365fc095b7a2d7  aggiornamenti.css
 8e788cd5f0e28dea623f94d6a015fe669280a5412b37e6c044f04a7b6cef71c9  aggiornamenti.js
 df3a8b55fa4329b7f8622843178dafab9b45007e44993422373355203ce23b13  app.css

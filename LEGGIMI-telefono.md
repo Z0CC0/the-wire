@@ -16,8 +16,10 @@ schermo. Funziona su iPhone e su Android, ed è la stessa app del computer.
 l'anno, niente revisione, niente attesa. L'app è una cartella di file statici:
 messa su un indirizzo HTTPS, il telefono la installa da sé.
 
-**Non serve nessun server nostro.** I file statici li serve chiunque — GitHub
-Pages va benissimo ed è gratuito. Da lì in poi l'app parla direttamente con i
+**Non serve nessun server nostro.** I file statici li serve chiunque — per
+questo repository li serve già GitHub Pages, gratis, all'indirizzo
+**https://z0cc0.github.io/the-wire/**: se ti basta quello, salta la pubblicazione e
+vai dritto all'installazione sul telefono. Da lì in poi l'app parla direttamente con i
 relay Nostr, come fa quella del computer: chi ospita i file non vede passare
 niente, perché non passa niente da lui.
 

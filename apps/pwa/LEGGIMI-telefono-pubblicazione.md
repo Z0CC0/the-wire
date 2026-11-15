@@ -18,6 +18,10 @@ alla fotocamera. Sono regole del browser, non nostre.
 
 ## Pubblicarla — una volta sola, gratis
 
+Se usi la copia del repository ufficiale, è già pubblicata:
+**https://z0cc0.github.io/the-wire/**. I passi qui sotto servono solo per metterla
+su un indirizzo tuo.
+
 Con GitHub Pages:
 
 1. Crea un repository su GitHub (**può essere pubblico**: qui dentro non c'è

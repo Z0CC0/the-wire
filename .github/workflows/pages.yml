@@ -1,0 +1,39 @@
+# La web app per iPhone (e per Android senza installare) su GitHub Pages.
+#
+# Pubblica la cartella `apps/pwa/sito` cosi' com'e' nel repository: e' gia' la
+# versione costruita (`npm run pwa`), con le impronte in IMPRONTE.txt. Niente
+# compilazione qui: cio' che si legge nel repository e' cio' che finisce in linea.
+#
+# Indirizzo: https://z0cc0.github.io/the-wire/
+
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths: ['apps/pwa/sito/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  pubblica:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/pwa/sito
+      - id: deploy
+        uses: actions/deploy-pages@v4

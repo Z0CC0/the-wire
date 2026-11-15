@@ -133,13 +133,14 @@ Tutto sta nella [pagina delle release](../../releases): un file per sistema.
 | **Windows** 10/11 | `THE-WIRE-Setup-2.1.0.exe` | Doppio clic. Si installa per l'utente corrente e mette l'icona sul desktop. SmartScreen avvisa perché non è firmato: *Ulteriori informazioni → Esegui comunque*. |
 | **macOS** (Apple Silicon e Intel) | `THE-WIRE-2.1.0-arm64.dmg` / `THE-WIRE-2.1.0-x64.dmg` | Apri il DMG e trascina in Applicazioni. La prima volta **tasto destro → Apri** (non è firmato). Se insiste: `xattr -cr "/Applications/THE WIRE.app"`. |
 | **Android** | `THE-WIRE-Android.apk` | Copia sul telefono e apri: Android chiede di consentire l'installazione da fonti sconosciute. Niente Play Store, niente indirizzo web. |
-| **iPhone** (e Android senza installare) | `THE-WIRE-telefono.zip` | È la web app: la cartella va su un indirizzo **HTTPS** (GitHub Pages va benissimo). Dal telefono si apre quell'indirizzo — **con Safari** su iPhone — e si aggiunge alla schermata Home. Dettagli in [LEGGIMI-telefono.md](LEGGIMI-telefono.md). |
+| **iPhone** (e Android senza installare) | **[https://z0cc0.github.io/the-wire/](https://z0cc0.github.io/the-wire/)** | È la web app, già in linea su GitHub Pages da questo repository. Dal telefono si apre quell'indirizzo — **con Safari** su iPhone — e si aggiunge alla schermata Home. `THE-WIRE-telefono.zip` nella release è la stessa cartella, per chi vuole un indirizzo proprio: [LEGGIMI-telefono.md](LEGGIMI-telefono.md). |
 
-> **Nota su iPhone e questo repository.** GitHub Pages pubblica solo da
-> repository pubblici (o con piano a pagamento). Finché questo repo è privato,
-> la cartella `apps/pwa/sito` va messa su un altro indirizzo HTTPS, oppure il
-> repo va reso pubblico: nei file non c'è nulla di segreto, le chiavi nascono
-> sul dispositivo di chi installa.
+> **Da dove viene l'indirizzo.** È la cartella `apps/pwa/sito` di questo
+> repository, pubblicata così com'è da `.github/workflows/pages.yml` a ogni
+> modifica su `main`. Le impronte SHA-256 dei file sono in `IMPRONTE.txt` dentro
+> la stessa cartella: chi vuole può confrontare ciò che il telefono scarica con
+> ciò che sta nel repository. Nei file non c'è nulla di segreto: le chiavi
+> nascono sul dispositivo di chi installa.
 
 ### Primi passi
 

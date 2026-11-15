@@ -261,9 +261,13 @@ npm run pwa
 ```
 
 Produce `apps/pwa/sito`: file statici da mettere su un qualunque indirizzo
-HTTPS. Dal telefono si apre quell'indirizzo e si aggiunge alla schermata Home —
-funziona su Android e iPhone allo stesso modo, senza Mac e senza scadenze. Il
-prezzo è quell'indirizzo web, che le due strade qui sopra non richiedono.
+HTTPS. Per questo repository l'indirizzo c'è già: **https://z0cc0.github.io/the-wire/**,
+pubblicato da `.github/workflows/pages.yml` a ogni modifica di quella cartella
+su `main` (la cartella sta nel repo già costruita, con le impronte in
+`IMPRONTE.txt`). Dal telefono si apre quell'indirizzo e si aggiunge alla
+schermata Home — funziona su Android e iPhone allo stesso modo, senza Mac e
+senza scadenze. Il prezzo è quell'indirizzo web, che le due strade qui sopra
+non richiedono.
 
 ## Collegare il telefono all'account
 

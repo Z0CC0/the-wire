@@ -25,10 +25,11 @@ settimana. Per provare va bene; per usarla tutti i giorni, no.
 **2. Account sviluppatore Apple, 99 dollari l'anno.** Stessa procedura, ma
 l'app dura un anno invece di sette giorni.
 
-**3. La PWA.** Nessuna installazione: si mette la cartella `apps/pwa/sito` su un
-indirizzo HTTPS (GitHub Pages basta e non costa niente), si apre l'indirizzo con
-Safari e si aggiunge alla schermata Home. Funziona subito e non scade. Il
-rovescio è che serve quell'indirizzo web, e l'utente voleva evitarlo.
+**3. La PWA.** Nessuna installazione: l'indirizzo esiste già,
+**https://z0cc0.github.io/the-wire/** (è la cartella `apps/pwa/sito` di questo
+repository pubblicata da GitHub Pages). Si apre con Safari e si aggiunge alla
+schermata Home. Funziona subito e non scade. Il rovescio è che passa da un
+indirizzo web, e l'utente voleva evitarlo.
 
 Vedi `LEGGIMI-telefono.md` per la strada 3, che non richiede un Mac.
 

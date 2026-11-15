@@ -5,7 +5,7 @@ Descrive cosa è protetto, con cosa, e — soprattutto — **cosa non lo è**. O
 affermazione qui dentro è verificabile nel codice; dove indico un file, quella è
 la riga da leggere.
 
-Versione: 2.1.0 (ex THE WIRE 2; cartella dati e identificativo restano `THE WIRE 2` / `com.mazzo.thewire2`, vedi README).
+Versione: 2.1.0 (ex THE WIRE 2; cartella dati e identificativo restano `THE WIRE 2` / `com.mazzo.thewire2`, vedi `docs/ARCHITETTURA.md`).
 
 ---
 
@@ -285,7 +285,7 @@ npm run build
 npm test
 ```
 
-209 test. I più interessanti per chi verifica:
+210 test. I più interessanti per chi verifica:
 
 - `packages/core/test/verifica-dispositivi.test.ts` — che la verifica cada
   quando i dispositivi del contatto cambiano, e resti quando non cambiano.

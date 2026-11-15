@@ -68,6 +68,15 @@ jobs:
 
       - run: mkdir -p release
 
+      # La chiave di firma Android vive nei secrets del repository, non nel
+      # codice: qui si ricompone in un file che vive solo su questa macchina.
+      - name: Chiave di firma Android
+        if: matrix.nome == 'android'
+        shell: bash
+        run: echo "$ANDROID_FIRMA_JKS_BASE64" | base64 -d > android/app/firma.jks
+        env:
+          ANDROID_FIRMA_JKS_BASE64: ${{ secrets.ANDROID_FIRMA_JKS_BASE64 }}
+
       - name: Costruisci il pacchetto
         run: ${{ matrix.comando }}
         shell: bash
@@ -76,6 +85,11 @@ jobs:
           # al primo avvio serve tasto destro -> Apri. Con un account Developer
           # si aggiungono qui CSC_LINK e CSC_KEY_PASSWORD come segreti.
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          # Firma Android (vedi android/app/build.gradle).
+          WIRE_FIRMA_FILE: firma.jks
+          WIRE_FIRMA_PASSWORD: ${{ secrets.ANDROID_FIRMA_PASSWORD }}
+          WIRE_FIRMA_ALIAS: ${{ secrets.ANDROID_FIRMA_ALIAS }}
+          WIRE_FIRMA_KEY_PASSWORD: ${{ secrets.ANDROID_FIRMA_KEY_PASSWORD }}
 
       - uses: actions/upload-artifact@v4
         with:
@@ -95,4 +109,4 @@ jobs:
             - **Windows**: `THE-WIRE-Setup-x.y.z.exe` — doppio clic, si installa da solo.
             - **macOS**: `.dmg` per Apple Silicon (arm64) e Intel (x64). Non firmato: la prima volta tasto destro → Apri.
             - **Android**: `THE-WIRE-Android.apk` — si copia sul telefono e si installa.
-            - **iPhone e Android senza installare**: `THE-WIRE-telefono.zip`, da mettere su un indirizzo HTTPS. Vedi il README del repository.
+            - **iPhone e Android senza installare**: la web app è già in linea su https://z0cc0.github.io/the-wire/ (aprire con Safari, poi «Aggiungi a schermata Home»). `THE-WIRE-telefono.zip` è la stessa cartella, per chi vuole metterla su un indirizzo proprio.

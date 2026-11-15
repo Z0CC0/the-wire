@@ -1,16 +1,43 @@
 apply plugin: 'com.android.application'
 
 android {
+    // Firma del pacchetto. La chiave NON sta nel repository: e' una chiave
+    // nostra, serve solo perche' Android non installa un pacchetto non firmato,
+    // ma chi la avesse potrebbe spacciare un'app sua per THE WIRE. Cambiandola,
+    // il telefono tratta l'app come un'altra e chiede di disinstallare la vecchia.
+    //
+    // Si legge, in ordine: dalle variabili d'ambiente WIRE_FIRMA_* (su GitHub
+    // Actions arrivano dai secrets), oppure da `android/firma.properties`
+    // (ignorato da git; modello in `firma.properties.esempio`). Senza nessuna
+    // delle due il pacchetto esce non firmato, con un avviso.
+    def firma = [
+        file:        System.getenv('WIRE_FIRMA_FILE') ?: 'firma.jks',
+        password:    System.getenv('WIRE_FIRMA_PASSWORD'),
+        alias:       System.getenv('WIRE_FIRMA_ALIAS'),
+        keyPassword: System.getenv('WIRE_FIRMA_KEY_PASSWORD'),
+    ]
+    def firmaProps = rootProject.file('firma.properties')
+    if (!firma.password && firmaProps.exists()) {
+        def p = new Properties()
+        firmaProps.withInputStream { p.load(it) }
+        firma.file        = p.getProperty('file', firma.file)
+        firma.password    = p.getProperty('password')
+        firma.alias       = p.getProperty('alias')
+        firma.keyPassword = p.getProperty('keyPassword', p.getProperty('password'))
+    }
+    def firmaPronta = firma.password && firma.alias && file(firma.file).exists()
+    if (!firmaPronta) {
+        logger.warn("THE WIRE: nessuna chiave di firma (WIRE_FIRMA_* o android/firma.properties): il pacchetto release esce NON firmato.")
+    }
+
     signingConfigs {
         release {
-            // Chiave nostra, generata qui e tenuta nel progetto. Non serve a
-            // dire chi siamo a nessuno store: serve solo perche' Android non
-            // installa un pacchetto non firmato. Cambiandola, il telefono
-            // tratta l'app come un'altra e chiede di disinstallare la vecchia.
-            storeFile file('firma.jks')
-            storePassword '[password rimossa dalla storia]'
-            keyAlias 'thewire2'
-            keyPassword '[password rimossa dalla storia]'
+            if (firmaPronta) {
+                storeFile file(firma.file)
+                storePassword firma.password
+                keyAlias firma.alias
+                keyPassword firma.keyPassword ?: firma.password
+            }
         }
     }
     namespace = "com.mazzo.thewire2"
@@ -30,7 +57,7 @@ android {
     }
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            signingConfig firmaPronta ? signingConfigs.release : null
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

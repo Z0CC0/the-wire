@@ -1,0 +1,6 @@
+# Copia questo file in `android/firma.properties` (ignorato da git) e compila.
+# Il percorso e' relativo a android/app/.
+file=firma.jks
+password=
+alias=
+keyPassword=
