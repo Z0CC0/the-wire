@@ -206,7 +206,7 @@ cambiati**:
   un deposito di formato diverso, e su un computer che l'ha avuta può esistere
   ancora;
 - l'identificativo dell'installer è `com.mazzo.thewire2`, e il pacchetto si
-  installa in `Programs	he-wire-2`: è ciò che permette all'installer nuovo di
+  installa in `Programs\the-wire-2`: è ciò che permette all'installer nuovo di
   **aggiornare sul posto** l'app già installata, tenendo identità, contatti e
   storico. Cambiarlo farebbe comparire una seconda app accanto alla prima.
 

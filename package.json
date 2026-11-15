@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "main": "apps/desktop/bundle/main.cjs",
-  "description": "Messaggistica cifrata peer-to-peer. Due facce: desktop (Electron) e terminale (CLI).",
+  "description": "Messaggistica cifrata fra amici: PC (Electron), telefono (web app, Android, iPhone).",
   "author": {
     "name": "mazzo"
   },
