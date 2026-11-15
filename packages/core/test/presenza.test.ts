@@ -29,7 +29,9 @@ async function cartella(): Promise<string> {
 
 /** Il battito parte da solo alla connessione, ma via `setInterval`: qui si
  *  aspetta il giro, non lo si simula. */
-const respiro = () => new Promise((r) => setTimeout(r, 60));
+// Sulle macchine di GitHub (due core, Argon2id a 64 MB) la stessa pausa non
+// basta: il tempo si allunga solo li', in locale resta quello che e'.
+const respiro = () => new Promise((r) => setTimeout(r, process.env['CI'] ? 720 : 60));
 
 beforeEach(() => MemoryMailbox.reset());
 afterAll(async () => {

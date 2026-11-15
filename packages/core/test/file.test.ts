@@ -26,7 +26,9 @@ async function cartella(): Promise<string> {
   return d;
 }
 
-const respiro = () => new Promise((r) => setTimeout(r, 120));
+// Sulle macchine di GitHub (due core, Argon2id a 64 MB) la stessa pausa non
+// basta: il tempo si allunga solo li', in locale resta quello che e'.
+const respiro = () => new Promise((r) => setTimeout(r, process.env['CI'] ? 1440 : 120));
 
 beforeEach(() => MemoryMailbox.reset());
 afterAll(async () => {
@@ -54,7 +56,13 @@ describe('file dalla mailbox', () => {
 
     const inviato = await a.sendFile(a.contact('BOB')!, 'foto.png', 'image/png', dati);
     expect(inviato.file?.stato).toBe('pronto');
-    await respiro();
+    // Non una pausa fissa: i pezzi arrivano uno alla volta, e quanto ci
+    // mettono dipende dalla macchina. Si aspetta lo stato giusto, con scadenza.
+    for (let i = 0; i < 200; i++) {
+      const m = (await b.historyWith(b.contact('ALICE')!)).find((x) => x.file);
+      if (m?.file?.stato === 'pronto') break;
+      await new Promise((r) => setTimeout(r, 100));
+    }
 
     const ricevuto = (await b.historyWith(b.contact('ALICE')!)).find((m) => m.file);
     expect(ricevuto?.file?.nome).toBe('foto.png');
