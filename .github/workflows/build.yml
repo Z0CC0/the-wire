@@ -34,11 +34,11 @@ jobs:
             file: release/*.dmg
           - os: ubuntu-latest
             nome: android
-            comando: npm run android:sync && cd android && chmod +x gradlew && ./gradlew assembleRelease --no-daemon && cd .. && cp "android/app/build/outputs/apk/release/app-release.apk" "release/THE WIRE - Android.apk"
+            comando: npm run android:sync && cd android && chmod +x gradlew && ./gradlew assembleRelease --no-daemon && cd .. && cp android/app/build/outputs/apk/release/app-release.apk release/THE-WIRE-Android.apk
             file: release/*.apk
           - os: ubuntu-latest
             nome: telefono
-            comando: npm run pwa && mkdir -p "release/THE WIRE - telefono" && cp -r apps/pwa/sito/. "release/THE WIRE - telefono/" && cd release && zip -r "THE WIRE - TELEFONO SENZA INSTALLARE.zip" "THE WIRE - telefono"
+            comando: npm run pwa && mkdir -p release/THE-WIRE-telefono && cp -r apps/pwa/sito/. release/THE-WIRE-telefono/ && cd release && zip -r THE-WIRE-telefono.zip THE-WIRE-telefono
             file: release/*.zip
 
     runs-on: ${{ matrix.os }}
@@ -92,7 +92,7 @@ jobs:
           body: |
             Pacchetti costruiti da GitHub Actions per il tag ${{ github.ref_name }}.
 
-            - **Windows**: `THE WIRE Setup x.y.z.exe` — doppio clic, si installa da solo.
+            - **Windows**: `THE-WIRE-Setup-x.y.z.exe` — doppio clic, si installa da solo.
             - **macOS**: `.dmg` per Apple Silicon (arm64) e Intel (x64). Non firmato: la prima volta tasto destro → Apri.
-            - **Android**: `THE WIRE - Android.apk` — si copia sul telefono e si installa.
-            - **iPhone e Android senza installare**: `THE WIRE - TELEFONO SENZA INSTALLARE.zip`, da mettere su un indirizzo HTTPS. Vedi il README del repository.
+            - **Android**: `THE-WIRE-Android.apk` — si copia sul telefono e si installa.
+            - **iPhone e Android senza installare**: `THE-WIRE-telefono.zip`, da mettere su un indirizzo HTTPS. Vedi il README del repository.

@@ -130,10 +130,10 @@ Tutto sta nella [pagina delle release](../../releases): un file per sistema.
 
 | Sistema | File | Come |
 |---|---|---|
-| **Windows** 10/11 | `THE WIRE Setup 2.1.0.exe` | Doppio clic. Si installa per l'utente corrente e mette l'icona sul desktop. SmartScreen avvisa perché non è firmato: *Ulteriori informazioni → Esegui comunque*. |
-| **macOS** (Apple Silicon e Intel) | `THE WIRE-2.1.0-arm64.dmg` / `THE WIRE-2.1.0.dmg` | Apri il DMG e trascina in Applicazioni. La prima volta **tasto destro → Apri** (non è firmato). Se insiste: `xattr -cr "/Applications/THE WIRE.app"`. |
-| **Android** | `THE WIRE - Android.apk` | Copia sul telefono e apri: Android chiede di consentire l'installazione da fonti sconosciute. Niente Play Store, niente indirizzo web. |
-| **iPhone** (e Android senza installare) | `THE WIRE - TELEFONO SENZA INSTALLARE.zip` | È la web app: la cartella va su un indirizzo **HTTPS** (GitHub Pages va benissimo). Dal telefono si apre quell'indirizzo — **con Safari** su iPhone — e si aggiunge alla schermata Home. Dettagli in [LEGGIMI-telefono.md](LEGGIMI-telefono.md). |
+| **Windows** 10/11 | `THE-WIRE-Setup-2.1.0.exe` | Doppio clic. Si installa per l'utente corrente e mette l'icona sul desktop. SmartScreen avvisa perché non è firmato: *Ulteriori informazioni → Esegui comunque*. |
+| **macOS** (Apple Silicon e Intel) | `THE-WIRE-2.1.0-arm64.dmg` / `THE-WIRE-2.1.0-x64.dmg` | Apri il DMG e trascina in Applicazioni. La prima volta **tasto destro → Apri** (non è firmato). Se insiste: `xattr -cr "/Applications/THE WIRE.app"`. |
+| **Android** | `THE-WIRE-Android.apk` | Copia sul telefono e apri: Android chiede di consentire l'installazione da fonti sconosciute. Niente Play Store, niente indirizzo web. |
+| **iPhone** (e Android senza installare) | `THE-WIRE-telefono.zip` | È la web app: la cartella va su un indirizzo **HTTPS** (GitHub Pages va benissimo). Dal telefono si apre quell'indirizzo — **con Safari** su iPhone — e si aggiunge alla schermata Home. Dettagli in [LEGGIMI-telefono.md](LEGGIMI-telefono.md). |
 
 > **Nota su iPhone e questo repository.** GitHub Pages pubblica solo da
 > repository pubblici (o con piano a pagamento). Finché questo repo è privato,
