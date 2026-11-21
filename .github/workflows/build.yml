@@ -35,7 +35,7 @@ jobs:
           - os: ubuntu-latest
             nome: linux
             comando: npm run dist:linux
-            file: release/*linux*
+            file: release/THE-WIRE-*linux*
           - os: ubuntu-latest
             nome: android
             comando: npm run android:sync && cd android && chmod +x gradlew && ./gradlew assembleRelease --no-daemon && cd .. && cp android/app/build/outputs/apk/release/app-release.apk release/THE-WIRE-Android.apk
