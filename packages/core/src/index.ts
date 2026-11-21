@@ -20,5 +20,7 @@ export * from './payload.js';
 export * from './group.js';
 
 export * from './filestore.js';
+export * from './relay.js';
+export * from './backup.js';
 export * from './turn.js';
 export * from './websocket.js';

@@ -10,12 +10,12 @@
 </p>
 
 <p align="center">
-  <img alt="versione" src="https://img.shields.io/badge/versione-0.1.1-ff1f1f?style=flat-square">
+  <img alt="versione" src="https://img.shields.io/badge/versione-0.1.2-ff1f1f?style=flat-square">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-installer-000?style=flat-square">
   <img alt="macOS" src="https://img.shields.io/badge/macOS-dmg-000?style=flat-square">
   <img alt="Android" src="https://img.shields.io/badge/Android-apk-000?style=flat-square">
   <img alt="iPhone" src="https://img.shields.io/badge/iPhone-web%20app-000?style=flat-square">
-  <img alt="test" src="https://img.shields.io/badge/test-217%20verdi-000?style=flat-square">
+  <img alt="test" src="https://img.shields.io/badge/test-247%20verdi-000?style=flat-square">
 </p>
 
 ---
@@ -44,8 +44,9 @@ sull'altro. Il telefono funziona a computer spento.
   legge né i precedenti né i successivi.
 - **Il relay non sa niente.** Doppia cifratura (ratchet + NIP‑44) dentro un
   involucro NIP‑59 firmato da una chiave usa‑e‑getta: il relay vede un
-  pacchetto opaco e un indirizzo di arrivo. Cinque relay in parallelo, basta
-  che due persone ne abbiano uno in comune.
+  pacchetto opaco e un indirizzo di arrivo. Cinque relay in parallelo, **e si
+  cambiano**: la tua card dice su quali ascolti, e chi ti scrive pubblica lì.
+  Se non risponde nessuno, una riserva entra da sola, da entrambe le parti.
 - **Arriva anche se l'altro è spento.** Il primo messaggio e i file fino a 5 MB
   si depositano nei relay e vengono ritirati alla prossima apertura.
 - **File senza limite di dimensione.** Oltre i 5 MB il file va da computer a
@@ -54,7 +55,11 @@ sull'altro. Il telefono funziona a computer spento.
   interrotto riprende da dove era. Se i router non si trovano, un server TURN
   opzionale (il proprio, o di un fornitore) fa da tramite.
 - **Più dispositivi, un solo account.** Si collega il telefono inquadrando un
-  QR; da quel momento rubrica e conversazioni arrivano su entrambi.
+  QR; rubrica, gruppi e **lo storico di prima** passano al dispositivo nuovo, e
+  da quel momento le conversazioni arrivano su entrambi.
+- **Backup in un file.** Chiavi, rubrica, conversazioni e file ricevuti in un
+  solo file, cifrato com'è già: si apre solo con la tua passphrase, e riporta
+  l'account su un computer nuovo quando il vecchio non c'è più.
 - **Gruppi con argomenti.** Un gruppo ha più conversazioni dentro, e si può
   aggiungere chi serve anche dopo averlo creato: la fotografia nuova arriva a
   tutti, nuovo compreso. Nessuna chiave di gruppo da inventare: ogni messaggio
@@ -81,12 +86,16 @@ sull'altro. Il telefono funziona a computer spento.
 - **Niente notifiche push.** Richiederebbero un server che sa quando arriva un
   messaggio e per chi — esattamente ciò che il programma evita di far
   esistere. I messaggi si vedono aprendo l'app.
-- **Dipende da relay di volontari.** Che uno o due non rispondano è normale;
-  se cadessero tutti e cinque, nulla parte. Non c'è un piano B automatico.
+- **Dipende da relay di volontari.** Che uno o due non rispondano è normale.
+  Se non risponde nessuno dei tuoi, si passa da soli a tre relay di riserva
+  (misurati, non scelti a caso); se cadono anche quelli, nulla parte. Puoi
+  scrivere relay tuoi in DISPOSITIVI, e chi ti scrive li saprà dalla tua card.
 - **I file grandi richiedono entrambi collegati**, e certe coppie di router non
   si trovano senza un TURN. Dal telefono i file oltre 5 MB non partono.
-- **Lo storico non si copia su un dispositivo nuovo.** Il telefono riceve quello
-  che arriva dopo il collegamento, non quello di prima.
+- **Lo storico passa al dispositivo nuovo, i file no.** Al collegamento il
+  primo dispositivo manda messaggi e gruppi (gli ultimi, fino a 5 MB compressi:
+  anni di testo). Dei file ricevuti passa la riga, non i byte: restano dove sono
+  arrivati, e la riga lo dice.
 - **iPhone senza App Store significa web app.** Apple non installa app fuori
   dallo store: resta la cartella statica su HTTPS aggiunta alla schermata Home
   (funziona e non scade), oppure Xcode con un ID gratuito che scade dopo 7
@@ -134,8 +143,8 @@ Tutto sta nella [pagina delle release](../../releases): un file per sistema.
 
 | Sistema | File | Come |
 |---|---|---|
-| **Windows** 10/11 | `THE-WIRE-Setup-0.1.1.exe` | Doppio clic. Si installa per l'utente corrente e mette l'icona sul desktop. SmartScreen avvisa perché non è firmato: *Ulteriori informazioni → Esegui comunque*. |
-| **macOS** (Apple Silicon e Intel) | `THE-WIRE-0.1.1-arm64.dmg` / `THE-WIRE-0.1.1-x64.dmg` | Apri il DMG e trascina in Applicazioni. La prima volta **tasto destro → Apri** (non è firmato). Se insiste: `xattr -cr "/Applications/THE WIRE.app"`. |
+| **Windows** 10/11 | `THE-WIRE-Setup-0.1.2.exe` | Doppio clic. Si installa per l'utente corrente e mette l'icona sul desktop. SmartScreen avvisa perché non è firmato: *Ulteriori informazioni → Esegui comunque*. |
+| **macOS** (Apple Silicon e Intel) | `THE-WIRE-0.1.2-arm64.dmg` / `THE-WIRE-0.1.2-x64.dmg` | Apri il DMG e trascina in Applicazioni. La prima volta **tasto destro → Apri** (non è firmato). Se insiste: `xattr -cr "/Applications/THE WIRE.app"`. |
 | **Android** | `THE-WIRE-Android.apk` | Copia sul telefono e apri: Android chiede di consentire l'installazione da fonti sconosciute. Niente Play Store, niente indirizzo web. |
 | **iPhone** (e Android senza installare) | **[https://z0cc0.github.io/the-wire/](https://z0cc0.github.io/the-wire/)** | È la web app, già in linea su GitHub Pages da questo repository. Dal telefono si apre quell'indirizzo — **con Safari** su iPhone — e si aggiunge alla schermata Home. `THE-WIRE-telefono.zip` nella release è la stessa cartella, per chi vuole un indirizzo proprio: [LEGGIMI-telefono.md](LEGGIMI-telefono.md). |
 
@@ -151,6 +160,7 @@ Tutto sta nella [pagina delle release](../../releases): un file per sistema.
 > toccano, e al primo avvio la nuova li ritrova da sola (rinomina la cartella
 > `THE WIRE 2` in `THE WIRE`). Su Android l'APK 0.1.0 va disinstallato e il
 > telefono ricollegato al PC con un codice nuovo. La web app non cambia nulla.
+> Dalla 0.1.1 alla 0.1.2 si installa sopra, e basta.
 
 ### Primi passi
 
@@ -188,7 +198,7 @@ Serve solo Node.js 22. Nessun compilatore, nessuna libreria di sistema.
 
 ```bash
 npm install
-npm test            # 217 test: crittografia, protocollo, gruppi, lock, consegna, trasferimento diretto
+npm test            # 247 test: crittografia, protocollo, gruppi, lock, consegna, trasferimento diretto
 npm run desktop     # avvia la finestra dai sorgenti
 ```
 

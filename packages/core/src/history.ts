@@ -60,7 +60,9 @@ export interface Message {
     readonly dimensione: number;
     readonly sha256: string;
     readonly via: 'mailbox' | 'diretto';
-    readonly stato: 'in-corso' | 'pronto' | 'fallito' | 'atteso';
+    /** `altrove`: la riga e' arrivata con lo storico da un altro dispositivo,
+     *  i byte no. Si vede che c'era un file, e dove sta. */
+    readonly stato: 'in-corso' | 'pronto' | 'fallito' | 'atteso' | 'altrove';
     /** Dove e' stato salvato, se e' passato dal collegamento diretto. */
     readonly percorso?: string;
     /** Quanto e' arrivato finora, per la barra di avanzamento. */
@@ -179,6 +181,41 @@ export class History {
     const tutti = (await this.all()).map((m) => (m.id === messaggio.id ? messaggio : m));
     const blob = tutti.map((m) => encodeRecord(m, this.key));
     await this.deposito.scrivi(this.chiave, unisci(blob));
+  }
+
+  /**
+   * Aggiunge messaggi venuti da un altro dispositivo, senza doppioni.
+   *
+   * I due storici danno nomi propri alle stesse cose: un messaggio ricevuto
+   * da un contatto ha un identificativo diverso su ogni dispositivo. Si
+   * riconosce in tre modi, dal piu' sicuro al meno: lo stesso identificativo
+   * (i propri messaggi, che viaggiano con il loro `mid`), lo stesso `origine`
+   * nella stessa conversazione (il nome che gli da' chi l'ha mandato), e
+   * infine stessa conversazione, stesso verso, stesso istante, stesso testo.
+   *
+   * Il registro viene riscritto in ordine di tempo: i messaggi vecchi che
+   * arrivano adesso devono stare dove stavano, non in fondo. Costa quanto la
+   * conversazione e' lunga, e si paga una volta sola, al collegamento.
+   */
+  async importa(messaggi: readonly Message[]): Promise<number> {
+    const presenti = await this.all();
+    const ids = new Set(presenti.map((m) => m.id));
+    const origini = new Set(presenti.filter((m) => m.origine).map((m) => `${m.peer}|${m.origine}`));
+    const impronte = new Set(presenti.map((m) => `${m.peer}|${m.mine ? 1 : 0}|${m.at}|${m.text}`));
+    const nuovi: Message[] = [];
+    for (const m of messaggi) {
+      const origine = m.origine ? `${m.peer}|${m.origine}` : null;
+      const impronta = `${m.peer}|${m.mine ? 1 : 0}|${m.at}|${m.text}`;
+      if (ids.has(m.id) || (origine && origini.has(origine)) || impronte.has(impronta)) continue;
+      ids.add(m.id);
+      if (origine) origini.add(origine);
+      impronte.add(impronta);
+      nuovi.push(m);
+    }
+    if (!nuovi.length) return 0;
+    const tutti = [...presenti, ...nuovi].sort((a, b) => a.at - b.at);
+    await this.deposito.scrivi(this.chiave, unisci(tutti.map((m) => encodeRecord(m, this.key))));
+    return nuovi.length;
   }
 
   /** Riscrive il registro senza i messaggi di un contatto. */

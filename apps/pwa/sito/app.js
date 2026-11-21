@@ -73,10 +73,60 @@ function lockScreen({ exists, versione }) {
             ? '<div class="lock__warn">Se perdi la passphrase, l’identità è persa. Per costruzione, nessuno può recuperarla.</div>'
             : ''
         }
+        ${
+          primo && api.ripristinaBackup
+            ? `<button class="uk-btn uk-btn--outline u-20" id="lockRipristina">HO UN BACKUP</button>
+               <input type="file" id="lockFile" accept=".wirebk" class="u-7" />
+               <div class="lock__warn u-19">Un backup fatto da DISPOSITIVI riporta qui l’account di un computer che non c’è più: rubrica, conversazioni, file. Si apre con la passphrase di allora. Se il vecchio dispositivo funziona ancora, usa invece COLLEGA UN DISPOSITIVO.</div>`
+            : ''
+        }
       </div>
     </div>`);
 
   const err = box.querySelector('#lockErr');
+
+  // Il ripristino: sul computer il file lo sceglie il sistema; sul telefono lo
+  // sceglie la pagina e passa i byte. In entrambi i casi, a deposito vuoto.
+  const ripristina = box.querySelector('#lockRipristina');
+  if (ripristina) {
+    const dopo = async (esito) => {
+      if (!esito) return;
+      box.remove();
+      await boot();
+    };
+    const fallito = (e) => {
+      err.textContent = motivo(e);
+      ripristina.disabled = false;
+      ripristina.textContent = 'HO UN BACKUP';
+    };
+    ripristina.onclick = async () => {
+      err.textContent = '';
+      if (api.runtime === 'ELECTRON') {
+        ripristina.disabled = true;
+        ripristina.textContent = 'LEGGO…';
+        try {
+          await dopo(await api.ripristinaBackup());
+          ripristina.disabled = false;
+          ripristina.textContent = 'HO UN BACKUP';
+        } catch (e) {
+          fallito(e);
+        }
+      } else {
+        box.querySelector('#lockFile').click();
+      }
+    };
+    box.querySelector('#lockFile').onchange = async (ev) => {
+      const f = ev.target.files?.[0];
+      if (!f) return;
+      ripristina.disabled = true;
+      ripristina.textContent = 'LEGGO…';
+      try {
+        await dopo(await api.ripristinaBackup(inBase64(new Uint8Array(await f.arrayBuffer()))));
+      } catch (e) {
+        fallito(e);
+      }
+    };
+  }
   const go = async () => {
     const p1 = box.querySelector('#pass1').value;
     const p2 = primo ? box.querySelector('#pass2').value : p1;
@@ -471,6 +521,9 @@ function allegato(m) {
     riga2 = `<span class="u-4">INTERROTTO AL ${perc}%</span> · riprende da solo · ${peso(f.dimensione)}`;
   } else if (f.stato === 'atteso') {
     riga2 = `<span class="u-4">IN ATTESA CHE SIA ONLINE</span> · ${peso(f.dimensione)}`;
+  } else if (f.stato === 'altrove') {
+    // La riga e' arrivata con lo storico da un altro dispositivo, i byte no.
+    riga2 = `SULL ALTRO DISPOSITIVO · ${peso(f.dimensione)}`;
   } else {
     riga2 = `${f.via === 'diretto' ? 'ARRIVATO DIRETTAMENTE' : 'PRONTO'} · ${peso(f.dimensione)}`;
   }
@@ -1194,10 +1247,157 @@ async function renderDispositivi() {
       messo voi.</div>`)
   );
 
+  if (api.relay) body.appendChild(sezioneRelay());
   if (api.runtime === 'ELECTRON' && api.turn) body.appendChild(sezioneTurn());
+  if (api.esportaBackup) body.appendChild(sezioneBackup());
 
   wrap.appendChild(body);
   setPane(wrap);
+}
+
+/**
+ * I relay: quali sono, come rispondono, e la lista personale.
+ *
+ * Fino alla 0.1.1 erano cinque, scritti nel programma: se fossero caduti
+ * tutti, niente sarebbe partito. Ora la lista si cambia, viaggia firmata
+ * dentro la propria voce — chi ti scrive pubblica dove TU ascolti — e c'e' una
+ * riserva che entra da sola quando nessuno dei normali risponde. La misura si
+ * fa qui, aprendo il pannello: non si pubblica niente per misurare.
+ */
+function sezioneRelay() {
+  const box = el('<div class="u-18"></div>');
+  const stato = el('<div class="uk-section">RELAY · MISURO…</div>');
+  const elenco = el('<div class="u-13"></div>');
+  const campo = el('<textarea class="uk-field addc__area u-17" rows="5" spellcheck="false"></textarea>');
+  const err = el('<div class="lock__err u-19"></div>');
+  const salva = el('<button class="uk-btn uk-btn--primary u-15">SALVA</button>');
+  const predefiniti = el('<button class="uk-btn uk-btn--outline u-15">PREDEFINITI</button>');
+  const misura = el('<button class="uk-btn uk-btn--outline u-21">RIMISURA</button>');
+
+  const mostraLista = (r) => {
+    campo.value = r.elenco.join('\n');
+    predefiniti.disabled = !r.personali;
+  };
+
+  const mostraStato = (righe) => {
+    const normali = righe.filter((r) => !r.riserva);
+    const ok = normali.filter((r) => r.stato === 'ok').length;
+    const inRiserva = righe.some((r) => r.riserva && r.stato === 'ok') && ok === 0;
+    stato.textContent = `RELAY · ${ok} SU ${normali.length} RISPONDONO${inRiserva ? ' · RISERVA IN ASCOLTO' : ''}`;
+    elenco.innerHTML = '';
+    for (const r of righe) {
+      const dettaglio =
+        r.stato === 'ok' ? `${r.ms === null ? 'APERTO' : `${r.ms} MS`}` : `<span class="u-4">${esc(r.errore || 'NON RISPONDE')}</span>`;
+      elenco.appendChild(
+        el(`<div class="scelta u-19">
+          <div class="scelta__titolo"><span class="dot" data-on="${r.stato === 'ok' ? 1 : 0}"></span> ${esc(
+            r.url.replace(/^wss:\/\//, '')
+          )}${r.riserva ? ' · RISERVA' : ''}</div>
+          <div class="addc__text u-19">${dettaglio}${r.errori ? ` · ${r.errori} ${r.errori === 1 ? 'RIFIUTO' : 'RIFIUTI'} DA QUANDO E ACCESO` : ''}</div>
+        </div>`)
+      );
+    }
+  };
+
+  const rimisura = async () => {
+    stato.textContent = 'RELAY · MISURO…';
+    misura.disabled = true;
+    try {
+      mostraStato(await api.statoRelay());
+    } catch (e) {
+      stato.textContent = `RELAY · ${motivo(e)}`;
+    }
+    misura.disabled = false;
+  };
+
+  salva.onclick = async () => {
+    err.textContent = '';
+    try {
+      const righe = campo.value
+        .split(/[\s,;]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      mostraLista(await api.impostaRelay(righe));
+      salva.textContent = 'SALVATO';
+      setTimeout(() => (salva.textContent = 'SALVA'), 1500);
+      await rimisura();
+    } catch (e) {
+      err.textContent = motivo(e);
+    }
+  };
+  predefiniti.onclick = async () => {
+    err.textContent = '';
+    try {
+      mostraLista(await api.impostaRelay(null));
+      await rimisura();
+    } catch (e) {
+      err.textContent = motivo(e);
+    }
+  };
+  misura.onclick = rimisura;
+
+  box.append(
+    stato,
+    el(`<div class="addc__text">I messaggi aspettano su relay pubblici di volontari finché l altro non li ritira.
+      Questi sono quelli su cui <b class="u-4">questo dispositivo ascolta</b>: chi ti scrive li conosce dalla tua
+      card e pubblica lì, anche se usa una lista diversa. Se nessuno di questi risponde, entrano in ascolto
+      quelli di riserva, da entrambe le parti. Puoi scriverne di tuoi, uno per riga, <code>wss://</code> soltanto.</div>`),
+    elenco,
+    campo,
+    riga(salva, predefiniti, misura),
+    err
+  );
+  api.relay().then(mostraLista).catch((e) => (err.textContent = motivo(e)));
+  void rimisura();
+  return box;
+}
+
+/**
+ * Il backup: il deposito intero in un file. Non si ricifra niente — e' gia'
+ * tutto cifrato con la passphrase e con chiavi derivate da lei — quindi il
+ * file si apre solo con la passphrase dell account, e si rimette su un
+ * dispositivo che non ha ancora un deposito.
+ */
+function sezioneBackup() {
+  const box = el('<div class="u-18"></div>');
+  const b = el('<button class="uk-btn uk-btn--primary u-23">SALVA UN BACKUP</button>');
+  const err = el('<div class="lock__err u-19"></div>');
+  b.onclick = async () => {
+    err.textContent = '';
+    b.disabled = true;
+    b.textContent = 'PREPARO…';
+    try {
+      if (api.runtime === 'ELECTRON') {
+        const dove = await api.esportaBackup();
+        b.textContent = dove ? 'SALVATO' : 'SALVA UN BACKUP';
+      } else {
+        const { nome, dati } = await api.esportaBackup();
+        const byte = Uint8Array.from(atob(dati), (c) => c.charCodeAt(0));
+        const url = URL.createObjectURL(new Blob([byte], { type: 'application/octet-stream' }));
+        const a = el(`<a href="${url}" download="${esc(nome)}"></a>`);
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        b.textContent = 'SALVATO';
+      }
+      setTimeout(() => (b.textContent = 'SALVA UN BACKUP'), 2000);
+    } catch (e) {
+      err.textContent = motivo(e);
+      b.textContent = 'SALVA UN BACKUP';
+    }
+    b.disabled = false;
+  };
+  box.append(
+    el('<div class="uk-section">BACKUP</div>'),
+    el(`<div class="addc__text">Un file solo con chiavi, rubrica, conversazioni e file ricevuti, <b class="u-4">cifrato
+      com è già</b>: si apre solo con la tua passphrase. Serve per un dispositivo nuovo quando questo non c è più —
+      al primo avvio, <b class="u-10">HO UN BACKUP</b>. Se questo dispositivo funziona ancora, per aggiungerne un
+      altro c è COLLEGA UN DISPOSITIVO: due copie accese dello stesso deposito rompono le conversazioni.</div>`),
+    riga(b),
+    err
+  );
+  return box;
 }
 
 /**
@@ -1622,6 +1822,16 @@ async function boot() {
   // Il collegamento diretto vive qui dentro: il processo principale gli
   // inoltra soltanto le segnalazioni.
   if (api.onSegnale) api.onSegnale(({ da, p }) => void riceviSegnale(da, p));
+
+  // Lo storico arrivato da un altro dispositivo: sono tante righe in un colpo
+  // solo, e si ridisegna la conversazione aperta invece di aggiungerle una a una.
+  if (api.onStorico) {
+    api.onStorico(() => {
+      void refreshAll().then(() => {
+        if (state.open) restore();
+      });
+    });
+  }
 
   api.onMessage(async (m) => {
     const soloAvanzamento = m.file && m.file.stato === 'in-corso';

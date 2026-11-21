@@ -1,7 +1,7 @@
 {
   "name": "the-wire",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "main": "apps/desktop/bundle/main.cjs",
   "description": "Messaggistica cifrata fra amici: PC (Electron), telefono (web app, Android, iPhone).",

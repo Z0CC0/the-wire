@@ -25,8 +25,10 @@ parte anche se l'altro è offline.
 
 **Consegna.** Relay Nostr pubblici e gratuiti. Il relay non vede il contenuto
 (doppia cifratura: ratchet + NIP-44) né chi scrive a chi (involucro NIP-59
-firmato da una chiave usa-e-getta). Si pubblica su cinque relay in parallelo:
-basta che due persone ne abbiano uno in comune.
+firmato da una chiave usa-e-getta). Si pubblica su cinque relay in parallelo, e
+dalla 0.1.2 la lista si cambia: la voce di ogni dispositivo porta i relay su cui
+ascolta, firmati, e chi scrive pubblica lì. Se nessuno risponde c'è una riserva
+che entra da sola, da entrambe le parti (vedi *Relay*).
 
 **Un programma alla volta.** Il deposito si prende all'apertura e si rilascia
 alla chiusura. Due programmi che avanzano lo stesso ratchet brucerebbero gli
@@ -89,7 +91,7 @@ npm test
 | Comando | Cosa fa |
 |---------|---------|
 | `npm run desktop` | costruisce il bundle e avvia la finestra Electron |
-| `npm test` | 217 test: crittografia, protocollo, gruppi, lock, consegna, prova d'insieme |
+| `npm test` | 247 test: crittografia, protocollo, gruppi, lock, consegna, prova d'insieme |
 | `npm run dist:win` | installer Windows (NSIS) |
 | `npm run dist:mac` | DMG macOS (arm64 + x64) |
 
@@ -106,7 +108,10 @@ packages/core/       il cuore, condiviso dalle due facce
   payload.ts           cosa viaggia dentro il cifrato, validato campo per campo
   group.ts             gruppi con argomenti, consegna a ventaglio
   mailbox.ts           interfaccia di trasporto (+ finto, per i test)
-  mailbox-nostr.ts     trasporto su relay pubblici
+  mailbox-nostr.ts     trasporto su relay pubblici, con la riserva e la misura
+  relay.ts             la lista personale, i relay di riserva, su quali pubblicare per un dispositivo
+  backup.ts            il deposito intero in un file, e il segno del ripristino
+  compressione.ts      gzip dove il runtime lo sa fare (lo storico al dispositivo nuovo)
   turn.ts              il server di appoggio del collegamento diretto, controllato prima di salvarlo
   account.ts           l'oggetto che usano entrambe le facce
 apps/desktop/        Electron: finestra e IPC. Niente protocollo.
@@ -184,6 +189,23 @@ sono gli stessi:
 ```bash
 THE_WIRE_DATI=C:\prova\A npx electron .
 ```
+
+**Backup.** DISPOSITIVI › SALVA UN BACKUP scrive un file `.wirebk` con dentro
+`wire.vault`, `wire.history` e i file ricevuti dalla mailbox, byte per byte
+così come stanno nella cartella: non si decifra e non si ricifra niente, quindi
+il file si apre solo con la passphrase dell'account. Formato in
+`packages/core/src/backup.ts`: `WIREBK | versione | indice JSON | voci`. Si
+rimette al primo avvio di un dispositivo senza deposito (HO UN BACKUP), dopo di
+che si sblocca come sempre. Alla prima apertura il programma trova il segno
+`wire.ripristino`, apre una sessione nuova per scrivere a ogni dispositivo
+noto — le sessioni nel backup sono ferme al giorno del backup, e scrivere con
+quelle riuserebbe numeri di messaggio già usati — riporta il punto di ripresa
+della mailbox a zero per ripescare ciò che è arrivato dopo, e lo dice nella
+conversazione. Non è il modo di aggiungere un dispositivo: per quello c'è il
+collegamento, e due copie accese dello stesso deposito avanzano gli stessi
+ratchet da due parti. I file arrivati dal collegamento diretto non ci sono: stanno
+dove li ha messi chi li ha ricevuti, in chiaro e per sua scelta. Sul telefono il
+file si scarica dal browser e si rilegge con un selettore di file.
 
 Il deposito si scrive in due tempi: prima su un file `.tmp` accanto, poi lo si
 **rinomina** sopra quello vero. La rinomina è atomica su NTFS come su APFS, quindi
@@ -286,9 +308,9 @@ sua identità, si è collegato ad A con il codice incollato, ha ricevuto da A la
 rubrica (C è comparso da solo), ha ricevuto il messaggio che C ha scritto ad A,
 ha ricevuto la **copia** della risposta scritta da A, e quello che ha scritto il
 telefono è arrivato a C e, come copia, sul PC di A. Niente server nostro, niente
-Tailscale: solo i relay. Quello che il telefono **non** riceve sono i messaggi
-scambiati prima del collegamento: lo storico non si copia, e non c'è un posto
-da cui copiarlo che non sia l'altro dispositivo.
+Tailscale: solo i relay. Allora il telefono **non** riceveva i messaggi
+scambiati prima del collegamento. Dalla 0.1.2 li riceve: vedi *Lo storico al
+dispositivo nuovo*, più sotto.
 
 
 Chi ti scrive deve cifrare una volta per ogni tuo dispositivo, quindi il
@@ -315,6 +337,76 @@ codice sta fermo davanti, e la batteria si nota.
 contatti. È fastidioso, ed è l'unica cosa che vi fa accorgere di un dispositivo
 che non avete messo voi: se cambia senza che nessuno dei due abbia collegato
 niente, è successo qualcosa.
+
+## Lo storico al dispositivo nuovo
+
+Quando il primo dispositivo accetta il saluto del nuovo (`dispositivo.nuovo`),
+dopo l'elenco dei dispositivi e la rubrica gli manda anche lo storico: tutti i
+messaggi, i gruppi e il nome, in un JSON compresso con gzip
+(`compressione.ts`; dove il runtime non sa comprimere parte in chiaro, e il
+pacchetto lo dice con `gz`). Viaggia a pezzi da 16 KB come un file sulla
+mailbox — `storico.offer` con dimensione, numero di pezzi e impronta, poi
+`storico.pezzo` — cifrato dal ratchet, **solo** a quel dispositivo: gli altri lo
+hanno già. Sopra i 5 MB compressi si tolgono i messaggi più vecchi, un quarto
+alla volta, finché ci sta: sono anni di testo, e si dice quanti sono arrivati.
+
+Chi riceve accetta `storico.*` solo da un proprio dispositivo e rivalida tutto:
+identificativi per forma, lunghezze, gruppi passati dalla stessa validazione di
+un `group.state` che arriva da un contatto (si entra solo nei gruppi di cui si
+è membri). Le righe dei file arrivano senza byte e con stato `altrove`: la
+conversazione mostra che c'era un file e che sta sull'altro dispositivo. Un
+telefono appena collegato con una foto da quattro megabyte per ogni immagine
+mai ricevuta sarebbe un trasferimento di ore sui relay.
+
+I doppioni: i propri messaggi hanno lo stesso identificativo su tutti i
+dispositivi (il `mid` viaggia con loro); quelli ricevuti no, e si riconoscono
+per `origine` — il nome che gli dà chi li ha mandati — nella stessa
+conversazione, o in ultima istanza per conversazione, verso, istante e testo
+uguali. `History.importa` riscrive il registro in ordine di tempo, una volta
+sola. `storico.test.ts` prova il giro completo con tre account veri: messaggi
+in entrambi i versi, gruppo, nome, file come riga, e che ciò che arriva dopo
+il collegamento non si duplichi con ciò che arriva nello storico.
+
+## Relay: la lista, la card, la riserva
+
+Fino alla 0.1.1 i cinque relay stavano nel programma e basta. Tre cose adesso:
+
+**La lista personale.** DISPOSITIVI mostra i relay su cui questo dispositivo
+ascolta, misurati aprendo il pannello (si apre il collegamento con ciascuno e
+si contano i millisecondi; non si pubblica niente per misurare), e un campo
+dove scriverne di propri, uno per riga. Il controllo sta nel cuore
+(`relay.ts`): solo `wss://`, niente credenziali nell'indirizzo, al massimo
+otto — ogni invio aspetta il più lento, e oltre non è ridondanza, è attesa.
+Scrivere i predefiniti a mano equivale a non scrivere niente. La lista è per
+dispositivo, come il TURN: il telefono ha la sua.
+
+**I relay nella card.** Cambiata la lista, la propria voce nel roster viene
+rifirmata con i relay dentro (`WIRE-DISPOSITIVO-2`: la firma della chiave
+d'account copre card e relay insieme; le voci senza relay restano sulla forma
+di prima e continuano a valere) e raccontata ai contatti e ai propri
+dispositivi. Da quel momento chi ti scrive pubblica **dove tu ascolti**, più
+sui suoi: `relayPerInvio` mette prima i tuoi, poi i suoi, senza doppioni, e il
+tetto taglia i suoi, mai i tuoi. È questo che fa ritrovare due persone con
+liste diverse, e che fa a meno del "basta che ne abbiate uno in comune". I
+relay non entrano nel numero di sicurezza: un annuncio che cambia solo i relay
+aggiorna la rubrica e lascia la verifica dov'è.
+
+**La riserva.** Tre relay in più (`RELAY_RISERVA`), usati solo quando nessuno
+dei normali accetta una busta, o quando il controllo all'avvio li trova tutti
+giù. Entrano da entrambe le parti — chi ha gli stessi relay giù finisce nello
+stesso posto — e da lì si ascolta anche su di loro per il resto
+dell'accensione. Il battito non ci passa: un battito perso non costa niente, e
+mandarlo in giro per la riserva ogni quarantacinque secondi riempirebbe di
+tentativi proprio il momento in cui la rete è in difficoltà. Sono misurati, non
+scelti: il 2026-11-21, ventinove relay pubblici provati con un gift wrap da
+54 KB (la misura vera di un pezzo di file) firmato da una chiave mai vista;
+ventuno rifiutano — connessione caduta, "serve un NIP-05", "a pagamento",
+"kind 1059 non permesso", lista di fiducia (`offchain.pub` e
+`nostr.bitcoiner.social` accettano un evento da 2 KB e rifiutano quello da
+54 KB) — e tre accettano oltre ai cinque di sempre: `relay.nostr.net`,
+`nostr.sathoarder.com`, `relay.nostr.wirednet.jp`. Nella stessa misura
+`relay.damus.io`, uno dei cinque, non rispondeva: è esattamente il caso per cui
+serve il resto.
 
 ## Eliminare messaggi
 
@@ -482,8 +574,9 @@ candidato può precedere la risposta sui relay. Copertura in
 ## Cosa non c'è ancora
 
 - **File nei gruppi.**
-- **Aggiungere membri a un gruppo già creato** (si scelgono alla creazione).
 - **Chiamate e condivisione schermo.**
+- **I file nello storico che passa al dispositivo nuovo**: passa la riga, non
+  i byte.
 
 ## Superficie d'attacco
 
@@ -493,7 +586,9 @@ Chi può fare cosa, e con quale sforzo.
 l'ora. Non vede il contenuto (doppia cifratura), non vede il mittente
 (l'involucro NIP-59 è firmato da una chiave usa-e-getta), non sa che i due
 indirizzi si stanno parlando — a meno di correlare i tempi. **Questa è la cosa
-che un osservatore paziente può davvero ricavare: chi riceve, e quando.**
+che un osservatore paziente può davvero ricavare: chi riceve, e quando.** Un
+relay scelto da te vede le stesse cose, più il fatto che l'hai scelto; e i tuoi
+contatti vedono su quali relay ascolti, perché sta nella tua card.
 
 **Chi sta sulla stessa rete** non vede niente: verso i relay si parla WSS, e
 non c'è più nessun server in ascolto sulla rete di casa. Il pannello TELEFONO —

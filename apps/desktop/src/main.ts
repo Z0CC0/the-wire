@@ -10,10 +10,11 @@
 
 import { app, BrowserWindow, dialog, ipcMain, powerMonitor, shell } from 'electron';
 import { join } from 'node:path';
-import { open, stat, writeFile, type FileHandle } from 'node:fs/promises';
+import { open, readFile, stat, writeFile, type FileHandle } from 'node:fs/promises';
 import {
   Account,
   identificativo,
+  nomeFileBackup,
   nomeFileSicuro,
   DEFAULT_TOPIC,
   SOGLIA_MAILBOX,
@@ -464,6 +465,48 @@ const azioni: Record<string, Azione> = {
     return true;
   },
 
+  // ---------- relay ----------
+
+  /** Su quali relay ascolta questo computer: i suoi o i predefiniti. */
+  relay: () => requireAccount().relay(),
+  /** La lista nuova, o null per i predefiniti. Il controllo lo fa il cuore. */
+  impostaRelay: (elenco: unknown[] | null) => requireAccount().impostaRelay(elenco ?? null),
+  /** Misura adesso: apre il collegamento con ciascuno e conta i millisecondi. */
+  statoRelay: () => requireAccount().statoRelay(),
+
+  // ---------- backup ----------
+
+  /** Il deposito intero in un file, dove dice l'utente. Resta cifrato com'e'. */
+  esportaBackup: async () => {
+    const a = requireAccount();
+    const scelta = await dialog.showSaveDialog(win!, {
+      defaultPath: nomeFileBackup(),
+      filters: [{ name: 'Backup THE WIRE', extensions: ['wirebk'] }],
+    });
+    if (scelta.canceled || !scelta.filePath) return null;
+    await writeFile(scelta.filePath, Buffer.from(await a.esportaBackup()));
+    return scelta.filePath;
+  },
+
+  /**
+   * Rimette un backup nella cartella dei dati. Solo quando non c'e' ancora un
+   * deposito: e' la strada per un computer nuovo, non un modo di tornare
+   * indietro su uno che funziona.
+   */
+  ripristinaBackup: async () => {
+    if (account) throw new Error('il ripristino vale solo su un dispositivo che non ha ancora un deposito');
+    const scelta = await dialog.showOpenDialog(win!, {
+      properties: ['openFile'],
+      filters: [
+        { name: 'Backup THE WIRE', extensions: ['wirebk'] },
+        { name: 'Tutti i file', extensions: ['*'] },
+      ],
+    });
+    const percorso = scelta.filePaths[0];
+    if (scelta.canceled || !percorso) return null;
+    return Account.ripristinaBackup(new Uint8Array(await readFile(percorso)));
+  },
+
   /** Il server TURN per il collegamento diretto. La password torna alla
    *  finestra perche' e' la finestra a creare la connessione: WebRTC vive li'. */
   turn: () => requireAccount().turn(),
@@ -557,6 +600,8 @@ async function bringUp(created: Account): Promise<{ address: string; uri: string
   facce.add((m) => win?.webContents.send('wire:message', m));
   // La segnalazione del collegamento diretto va alla finestra: WebRTC vive li'.
   account.onSegnale((da, p) => win?.webContents.send('wire:segnale', { da, p }));
+  // Lo storico arrivato da un altro dispositivo: la finestra rilegge la conversazione.
+  account.onStorico((quanti) => win?.webContents.send('wire:storico', quanti));
   try {
     await account.connect();
     // `void` non gestisce il rifiuto: lo lascia diventare una promessa non

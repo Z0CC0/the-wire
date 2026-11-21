@@ -57,6 +57,18 @@ contextBridge.exposeInMainWorld('wireApi', {
   // Il server di appoggio per quando due router non si trovano.
   turn: () => call('turn'),
   impostaTurn: (valore) => call('impostaTurn', valore),
+  // I relay: quali, come stanno, e la lista personale.
+  relay: () => call('relay'),
+  impostaRelay: (elenco) => call('impostaRelay', elenco),
+  statoRelay: () => call('statoRelay'),
+  // Il backup: il deposito intero in un file, e il ritorno da quel file.
+  esportaBackup: () => call('esportaBackup'),
+  ripristinaBackup: () => call('ripristinaBackup'),
+  onStorico: (cb) => {
+    const handler = (_e, quanti) => cb(quanti);
+    ipcRenderer.on('wire:storico', handler);
+    return () => ipcRenderer.removeListener('wire:storico', handler);
+  },
   onSegnale: (cb) => {
     const handler = (_e, m) => cb(m);
     ipcRenderer.on('wire:segnale', handler);

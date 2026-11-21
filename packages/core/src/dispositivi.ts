@@ -34,6 +34,14 @@ export interface Dispositivo {
   /** Firma della chiave d'account su questo dispositivo. */
   readonly firma: Uint8Array;
   readonly aggiuntoIl: number;
+  /**
+   * I relay su cui QUESTO dispositivo ascolta, se chi lo possiede ne ha scelti
+   * di suoi. Assente vuol dire "i predefiniti". Chi scrive a questo dispositivo
+   * pubblica qui: e' cio' che fa ritrovare due persone con liste diverse.
+   * Coperti dalla firma dell'account, come il resto della voce: un relay
+   * sostituito per strada non passa.
+   */
+  readonly relay?: readonly string[];
 }
 
 /** La chiave che tiene insieme i dispositivi di una persona. */
@@ -55,22 +63,29 @@ export function creaChiaveAccount(): ChiaveAccount {
  * anche l'account, o una firma fatta per un account potrebbe essere riusata in
  * un altro.
  */
-function daFirmare(accountPublic: Uint8Array, card: ContactCard): Uint8Array {
-  return cat(te.encode('WIRE-DISPOSITIVO-1'), accountPublic, encodeCard(card));
+function daFirmare(accountPublic: Uint8Array, card: ContactCard, relay?: readonly string[]): Uint8Array {
+  // Due forme, apposta. Le voci della 0.1.1 non hanno relay e sono firmate
+  // con la prima: devono continuare a passare, o ogni contatto vecchio
+  // smetterebbe di essere valido all'aggiornamento. Una voce con i relay porta
+  // una firma della seconda forma, che li copre uno per uno e in ordine.
+  if (!relay) return cat(te.encode('WIRE-DISPOSITIVO-1'), accountPublic, encodeCard(card));
+  return cat(te.encode('WIRE-DISPOSITIVO-2'), accountPublic, encodeCard(card), te.encode(JSON.stringify(relay)));
 }
 
 export function firmaDispositivo(
   chiave: ChiaveAccount,
   card: ContactCard,
   nome: string,
-  aggiuntoIl = Date.now()
+  aggiuntoIl = Date.now(),
+  relay?: readonly string[]
 ): Dispositivo {
   return {
     id: hex(card.sigPublic),
     card,
     nome: nome.trim().slice(0, 60),
-    firma: ed25519.sign(daFirmare(chiave.publicKey, card), chiave.secret),
+    firma: ed25519.sign(daFirmare(chiave.publicKey, card, relay), chiave.secret),
     aggiuntoIl,
+    ...(relay ? { relay: [...relay] } : {}),
   };
 }
 
@@ -85,11 +100,26 @@ export function firmaDispositivo(
 export function dispositivoValido(accountPublic: Uint8Array, d: Dispositivo): boolean {
   if (d.id !== hex(d.card.sigPublic)) return false;
   if (!verifyCard(d.card)) return false;
+  if (d.relay !== undefined && !relayBenFormati(d.relay)) return false;
   try {
-    return ed25519.verify(d.firma, daFirmare(accountPublic, d.card), accountPublic);
+    return ed25519.verify(d.firma, daFirmare(accountPublic, d.card, d.relay), accountPublic);
   } catch {
     return false;
   }
+}
+
+/** Oltre questo numero non e' una lista di relay, e' zavorra nel roster. */
+const MAX_RELAY_VOCE = 8;
+const FORMA_RELAY = /^wss:\/\/[A-Za-z0-9.-]+(:\d{1,5})?(\/[A-Za-z0-9._~\-/]*)?$/;
+
+/** Forma della lista dei relay in una voce: stringhe `wss://`, poche, corte. */
+function relayBenFormati(relay: unknown): relay is readonly string[] {
+  return (
+    Array.isArray(relay) &&
+    relay.length > 0 &&
+    relay.length <= MAX_RELAY_VOCE &&
+    relay.every((r) => typeof r === 'string' && r.length <= 200 && FORMA_RELAY.test(r))
+  );
 }
 
 /** Solo i dispositivi che reggono il controllo, senza doppioni. */
@@ -238,10 +268,19 @@ export interface DispositivoTrasporto {
   readonly card: string;
   readonly firma: string;
   readonly aggiuntoIl: number;
+  /** Assente nelle voci della 0.1.1 e in quelle che usano i predefiniti. */
+  readonly relay?: readonly string[];
 }
 
 export function perTrasporto(d: Dispositivo): DispositivoTrasporto {
-  return { id: d.id, nome: d.nome, card: hex(encodeCard(d.card)), firma: hex(d.firma), aggiuntoIl: d.aggiuntoIl };
+  return {
+    id: d.id,
+    nome: d.nome,
+    card: hex(encodeCard(d.card)),
+    firma: hex(d.firma),
+    aggiuntoIl: d.aggiuntoIl,
+    ...(d.relay ? { relay: [...d.relay] } : {}),
+  };
 }
 
 /** Rifa' un dispositivo da come e' arrivato. Getta se la forma non torna: cio'
@@ -254,6 +293,9 @@ export function daTrasporto(t: DispositivoTrasporto): Dispositivo {
     nome: String(t.nome ?? '').slice(0, 60),
     firma: unhexStretto(t.firma, 64),
     aggiuntoIl: typeof t.aggiuntoIl === 'number' && Number.isFinite(t.aggiuntoIl) ? t.aggiuntoIl : 0,
+    // Si porta cosi' com'e': a dire se e' una lista buona ci pensa la verifica
+    // della firma, che la copre. Qui si scarta solo cio' che non e' un elenco.
+    ...(Array.isArray(t.relay) ? { relay: t.relay.map(String) } : {}),
   };
 }
 

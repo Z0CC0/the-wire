@@ -39,12 +39,15 @@ import {
 } from './identity.js';
 import { historyKey, openVaultKeyed, resealVault, sealVault, type Vault } from './keystore.js';
 import { validaTurn, type ServerTurn } from './turn.js';
+import { RELAY_RISERVA, normalizzaRelay, type StatoRelay } from './relay.js';
+import { SEGNO_RIPRISTINO, impacchetta, spacchetta, type VoceBackup } from './backup.js';
+import { comprimi, decomprimi } from './compressione.js';
 import { FileStore, fileKey } from './filestore.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { History, type Message } from './history.js';
 import { decodeEnvelope } from './envelope.js';
 import { Session } from './session.js';
-import { NostrMailbox } from './mailbox-nostr.js';
+import { DEFAULT_RELAYS, NostrMailbox } from './mailbox-nostr.js';
 import { SeenSet, type Inbound, type Mailbox } from './mailbox.js';
 /**
  * Cio' che l'Account chiede a una serratura: solo di potersi aprire.
@@ -67,6 +70,7 @@ import {
   type Payload,
   type RosterEntry,
   type RtcPayload,
+  type StoricoOfferPayload,
 } from './payload.js';
 import {
   DEFAULT_TOPIC,
@@ -161,9 +165,30 @@ interface InArrivo {
   arrivati: number;
 }
 
+/** Lo storico che sta arrivando da un proprio dispositivo, a pezzi. */
+interface StoricoInArrivo {
+  readonly offerta: StoricoOfferPayload;
+  readonly pezzi: (Uint8Array | undefined)[];
+  arrivati: number;
+}
+
+/** Cosa viaggia dal primo dispositivo a quello nuovo, dentro `storico.*`. */
+interface PaccoStorico {
+  readonly v: 1;
+  readonly messaggi: readonly Message[];
+  readonly gruppi: readonly Group[];
+  readonly nome: string;
+}
+
 export class Account {
   private mailbox: Mailbox | null = null;
+  /** La mailbox l'ha creata questo account, e puo' rifarla da capo quando i
+   *  relay cambiano. Quella passata dai test no: non si tocca. */
+  private mailboxInterna = false;
+  private mailboxLive = true;
   private unwatch: (() => void) | null = null;
+  private readonly storiciInArrivo = new Map<string, StoricoInArrivo>();
+  private readonly osservatoriStorico = new Set<(quanti: number) => void>();
   /** I trasferimenti diretti che stanno avvenendo adesso: vivono qui e non
    *  sul disco, perche' l'avanzamento non serve piu' un minuto dopo. */
   private inTransito = new Map<string, Message>();
@@ -269,7 +294,7 @@ export class Account {
         viste: {},
         profile: { name: '' },
         presenze: {},
-        rete: { turn: null },
+        rete: { turn: null, relay: null },
       };
       // Se c'e' gia' un deposito, fallire invece di sovrascrivere l'identita'.
       if (await deposito.esiste(VAULT_FILE)) throw new Error('esiste gia un deposito in questa cartella');
@@ -337,7 +362,7 @@ export class Account {
       viste: {},
       profile: { name: '' },
       presenze: {},
-      rete: { turn: null },
+      rete: { turn: null, relay: null },
     };
     await deposito.scrivi(VAULT_FILE, sealVault(vault, passphrase));
     return Account.apri(passphrase, deposito, lock, null);
@@ -352,7 +377,7 @@ export class Account {
     const bytes = await deposito.leggi(VAULT_FILE);
     if (!bytes) throw new Error('nessun deposito da aprire');
     const { vault, key, salt } = openVaultKeyed(bytes, passphrase);
-    return new Account(
+    const account = new Account(
       deposito,
       cartella,
       vault,
@@ -361,6 +386,98 @@ export class Account {
       new History(deposito, HISTORY_FILE, historyKey(key)),
       lock
     );
+    // Un deposito appena ripristinato da un backup ha sessioni ferme al
+    // momento del backup: si sistemano qui, una volta sola, con la chiave
+    // gia' in mano.
+    if (await deposito.esiste(SEGNO_RIPRISTINO)) await account.dopoRipristino();
+    return account;
+  }
+
+  // ---------- backup ----------
+
+  /**
+   * Il deposito intero in un file: le chiavi (cifrate con la passphrase), lo
+   * storico e i file ricevuti (cifrati con chiavi derivate). Niente viene
+   * decifrato per farlo, e niente lo apre senza la passphrase dell'account.
+   */
+  async esportaBackup(): Promise<Uint8Array> {
+    await this.save();
+    const voci: VoceBackup[] = [];
+    for (const nome of [VAULT_FILE, HISTORY_FILE]) {
+      const dati = await this.deposito.leggi(nome);
+      if (dati) voci.push({ nome, dati });
+    }
+    // I file ricevuti dalla mailbox stanno nel magazzino cifrato e si portano.
+    // Quelli arrivati dal collegamento diretto stanno dove li ha messi chi li
+    // ha ricevuti, in chiaro e per sua scelta: non sono roba del deposito.
+    const visti = new Set<string>();
+    for (const m of await this.history.all()) {
+      const f = m.file;
+      if (!f || f.via !== 'mailbox' || f.stato !== 'pronto' || visti.has(f.id)) continue;
+      visti.add(f.id);
+      const dati = await this.deposito.leggi(`file-${f.id}`);
+      if (dati) voci.push({ nome: `file-${f.id}`, dati });
+    }
+    return impacchetta(voci);
+  }
+
+  /**
+   * Rimette un backup in un deposito VUOTO. Poi si apre con la passphrase di
+   * sempre, come un deposito qualunque.
+   *
+   * Solo vuoto, e non e' una cautela: scrivere un backup sopra un deposito
+   * vivo lo porterebbe indietro nel tempo, sessioni comprese.
+   */
+  static async ripristinaSuDeposito(bytes: Uint8Array, deposito: Deposito): Promise<{ voci: number; creato: number }> {
+    if (await deposito.esiste(VAULT_FILE)) {
+      throw new Error('qui c e gia un deposito: il ripristino vale solo su un dispositivo che non ne ha');
+    }
+    const backup = spacchetta(bytes);
+    if (!backup.voci.some((v) => v.nome === VAULT_FILE)) throw new Error('il backup non contiene il deposito delle chiavi');
+    for (const v of backup.voci) await this.scriviVoceBackup(deposito, v);
+    await deposito.scrivi(SEGNO_RIPRISTINO, te.encode(String(backup.creato)));
+    return { voci: backup.voci.length, creato: backup.creato };
+  }
+
+  /** Solo i nomi che un deposito di THE WIRE puo' avere: il resto non si scrive. */
+  private static async scriviVoceBackup(deposito: Deposito, v: VoceBackup): Promise<void> {
+    if (v.nome !== VAULT_FILE && v.nome !== HISTORY_FILE && !/^file-[0-9a-f]{8,128}$/.test(v.nome)) return;
+    await deposito.scrivi(v.nome, v.dati);
+  }
+
+  static async ripristinaBackup(bytes: Uint8Array, dir?: string): Promise<{ voci: number; creato: number }> {
+    const cartella = dir ?? (await defaultDataDir());
+    return Account.ripristinaSuDeposito(bytes, await depositoPerCartella(cartella));
+  }
+
+  /**
+   * La prima apertura dopo un ripristino.
+   *
+   * Le sessioni nel backup sono ferme al giorno del backup, mentre i contatti
+   * da allora sono andati avanti: scrivere con quelle vorrebbe dire riusare
+   * numeri di messaggio gia' usati, e l'altro li scarterebbe per sempre. Si
+   * apre una sessione nuova per scrivere a ogni dispositivo noto — il primo
+   * messaggio portera' il blocco X3DH, che l'altro accetta — e le vecchie
+   * restano dietro, per leggere quello che e' arrivato nel frattempo.
+   */
+  private async dopoRipristino(): Promise<void> {
+    const tutti = [...this.contacts().flatMap((c) => c.dispositivi), ...this.altriMiei()];
+    for (const d of tutti) {
+      if (!verifyCard(d.card)) continue;
+      const aperte = this.sessions.get(d.id) ?? [];
+      this.sessions.set(d.id, [Session.start(this.vault.identity, d.card), ...aperte].slice(0, Account.MAX_SESSIONI));
+    }
+    // Il punto di ripresa torna indietro: quello che e' arrivato dopo il
+    // backup sta ancora sui relay, e si ripesca.
+    this.vault.mailbox.since = 0;
+    await this.deposito.elimina(SEGNO_RIPRISTINO);
+    await this.record({
+      peer: this.id,
+      mine: false,
+      text: 'Account ripristinato da un backup. Le conversazioni ripartono con sessioni nuove: il primo messaggio a ciascun contatto riapre il collegamento.',
+      at: Date.now(),
+      system: true,
+    });
   }
 
   static async exists(dir?: string): Promise<boolean> {
@@ -611,6 +728,97 @@ export class Account {
     return t;
   }
 
+  // ---------- relay ----------
+
+  /** Su quali relay ascolta QUESTO dispositivo: i suoi, o i predefiniti. */
+  relay(): { elenco: string[]; personali: boolean } {
+    const personali = this.vault.rete?.relay;
+    return personali && personali.length
+      ? { elenco: [...personali], personali: true }
+      : { elenco: [...DEFAULT_RELAYS], personali: false };
+  }
+
+  /** I relay da scrivere nella propria voce del roster: solo se non sono i predefiniti. */
+  private relayDichiarati(): string[] | undefined {
+    const personali = this.vault.rete?.relay;
+    return personali && personali.length ? [...personali] : undefined;
+  }
+
+  /**
+   * Cambia la lista dei relay di questo dispositivo. `null` rimette i
+   * predefiniti.
+   *
+   * Tre cose insieme, e servono tutte: si salva; si rifirma la propria voce
+   * del roster con i relay dentro, e la si racconta ai contatti e ai propri
+   * dispositivi, cosi' chi scrive pubblica dove ascoltiamo; si ricollega la
+   * mailbox, perche' quella aperta ascolta ancora sulla lista di prima.
+   */
+  async impostaRelay(elenco: readonly unknown[] | null): Promise<{ elenco: string[]; personali: boolean }> {
+    const nuovi = elenco === null ? null : normalizzaRelay(elenco);
+    // Scrivere a mano i predefiniti e' come non scrivere niente: la voce resta
+    // senza relay, e nessun contatto deve aggiornarsi per nulla.
+    const uguali = nuovi !== null && nuovi.length === DEFAULT_RELAYS.length && nuovi.every((r, i) => r === DEFAULT_RELAYS[i]);
+    const personali = nuovi && !uguali ? nuovi : null;
+    const prima = JSON.stringify(this.relayDichiarati() ?? null);
+    (this.vault as { rete: Vault['rete'] }).rete = { ...this.vault.rete, relay: personali };
+    if (prima !== JSON.stringify(personali)) {
+      this.rifirmaMiaVoce();
+      await this.save();
+      await this.ricollega();
+      await this.raccontaDispositivi();
+      await this.mandaAiMiei({ v: 1, t: 'dispositivi', elenco: this.dispositivi.map(perTrasporto) });
+    } else {
+      await this.save();
+    }
+    return this.relay();
+  }
+
+  /** La propria voce nel roster, rifirmata con i relay di adesso. */
+  private rifirmaMiaVoce(): void {
+    const chiave: ChiaveAccount = { secret: unhex(this.vault.account.secret), publicKey: this.accountPublic };
+    const mia = this.vault.dispositivi.find((v) => v.id === this.idDispositivo);
+    const voce = firmaDispositivo(
+      chiave,
+      this.card,
+      mia?.nome ?? 'questo dispositivo',
+      mia?.aggiuntoIl ?? Date.now(),
+      this.relayDichiarati()
+    );
+    this.vault.dispositivi = [...this.vault.dispositivi.filter((v) => v.id !== this.idDispositivo), perTrasporto(voce)];
+  }
+
+  /** Chiude la mailbox e la riapre sulla lista di adesso. Solo se e' nostra. */
+  private async ricollega(): Promise<void> {
+    if (!this.mailbox || !this.mailboxInterna) return;
+    if (this.battito) clearInterval(this.battito);
+    this.battito = null;
+    this.unwatch?.();
+    this.unwatch = null;
+    const vecchia = this.mailbox;
+    this.mailbox = null;
+    try {
+      await vecchia.close();
+    } catch {
+      /* gia' chiusa, o relay spariti: non cambia niente */
+    }
+    await this.connect(undefined, { live: this.mailboxLive });
+  }
+
+  /**
+   * Come stanno i relay, misurato adesso: apre il collegamento con ciascuno e
+   * conta i millisecondi. Con una mailbox che non e' Nostr non c'e' niente da
+   * misurare, e si dice solo quali sono.
+   */
+  async statoRelay(): Promise<StatoRelay[]> {
+    if (this.mailbox instanceof NostrMailbox) return this.mailbox.controlla();
+    return this.relay().elenco.map((url) => ({ url, stato: 'ok', ms: null, errore: null, errori: 0, riserva: false }));
+  }
+
+  /** Vero se la riserva e' entrata in gioco da quando la mailbox e' aperta. */
+  get riservaAttiva(): boolean {
+    return this.mailbox instanceof NostrMailbox && this.mailbox.riservaAttiva;
+  }
+
   // ---------- presenza ----------
 
   /** Quando si e' fatto vivo l'ultima volta. null = mai, da quando esiste
@@ -653,7 +861,7 @@ export class Account {
       // dei suoi, e non sappiamo quale sia acceso.
       for (const d of contact.dispositivi) {
         try {
-          await mailbox.send(d.card, payload, 'presenza');
+          await mailbox.send(d.card, payload, 'presenza', d.relay);
         } catch {
           /* offline, o nessun relay disponibile: si riprova al giro dopo */
         }
@@ -769,7 +977,7 @@ export class Account {
     for (const d of this.destinatari(contact)) {
       const cifrato = this.sessionFor(d).encrypt(bytes);
       spedizioni.push(
-        mailbox.send(d.card, cifrato).then(
+        mailbox.send(d.card, cifrato, 'messaggio', d.relay).then(
           () => {
             consegnati++;
           },
@@ -782,7 +990,7 @@ export class Account {
     for (const d of this.altriMiei()) {
       const cifrato = this.sessionFor(d).encrypt(copia);
       // Un proprio dispositivo spento non fa fallire l'invio.
-      spedizioni.push(mailbox.send(d.card, cifrato).catch(() => {}));
+      spedizioni.push(mailbox.send(d.card, cifrato, 'messaggio', d.relay).catch(() => {}));
     }
     await Promise.all(spedizioni);
     if (consegnati === 0) {
@@ -918,7 +1126,13 @@ export class Account {
     if (this.contacts().length) throw new Error('questo dispositivo ha gia una rubrica: collegalo da nuovo');
 
     // La propria voce nel roster, firmata con la chiave appena ricevuta.
-    const mio = firmaDispositivo(chiave, this.card, this.nomeDispositivo || 'dispositivo collegato');
+    const mio = firmaDispositivo(
+      chiave,
+      this.card,
+      this.nomeDispositivo || 'dispositivo collegato',
+      Date.now(),
+      this.relayDichiarati()
+    );
     const invitante = firmaDispositivo(chiave, c.card, 'primo dispositivo');
 
     this.vault.account = { secret: hex(chiave.secret), publicKey: hex(chiave.publicKey) };
@@ -947,21 +1161,32 @@ export class Account {
    * La firma si ricontrolla con la propria chiave d'account: una voce che non
    * torna e' qualcuno che prova a farsi passare per un tuo telefono.
    */
-  private async accettaDispositivo(voce: unknown): Promise<boolean> {
+  private async accettaDispositivo(voce: unknown): Promise<Dispositivo | null> {
     let d: Dispositivo;
     try {
       d = daTrasporto(voce as never);
     } catch {
-      return false;
+      return null;
     }
-    if (!dispositivoValido(this.accountPublic, d)) return false;
-    if (this.dispositivi.some((x) => x.id === d.id)) return false;
+    if (!dispositivoValido(this.accountPublic, d)) return null;
+    const gia = this.dispositivi.find((x) => x.id === d.id);
+    if (gia) {
+      // Lo conosciamo gia'. L'unica cosa che puo' essere cambiata sono i
+      // relay: un proprio dispositivo che ne sceglie di suoi li manda cosi'.
+      // Non e' un dispositivo nuovo, e non si racconta in giro: lo ha gia'
+      // fatto lui.
+      if (JSON.stringify(gia.relay ?? null) !== JSON.stringify(d.relay ?? null)) {
+        this.vault.dispositivi = this.vault.dispositivi.map((v) => (v.id === d.id ? perTrasporto(d) : v));
+        await this.save();
+      }
+      return null;
+    }
     if (this.vault.dispositivi.length >= MAX_DISPOSITIVI) throw new Error('troppi dispositivi collegati');
 
     this.vault.dispositivi = [...this.vault.dispositivi, perTrasporto(d)];
     await this.save();
     await this.raccontaDispositivi();
-    return true;
+    return d;
   }
 
   /**
@@ -1010,11 +1235,171 @@ export class Account {
     const bytes = encodePayload(payload);
     for (const d of this.altriMiei()) {
       try {
-        await this.mailbox.send(d.card, this.sessionFor(d).encrypt(bytes));
+        await this.mailbox.send(d.card, this.sessionFor(d).encrypt(bytes), 'messaggio', d.relay);
       } catch {
         /* un proprio dispositivo spento non e' un errore */
       }
     }
+  }
+
+  // ---------- lo storico al dispositivo nuovo ----------
+
+  /** Chi vuole sapere quando arriva uno storico da un altro dispositivo. */
+  onStorico(cb: (quanti: number) => void): () => void {
+    this.osservatoriStorico.add(cb);
+    return () => this.osservatoriStorico.delete(cb);
+  }
+
+  /**
+   * Quello che si manda: i messaggi, i gruppi, il nome. Compresso dove si puo'.
+   *
+   * Le righe con un file restano, i byte no: su un telefono appena collegato
+   * un'immagine da quattro megabyte per ogni foto mai ricevuta sarebbe un
+   * trasferimento di ore, e i file vivono gia' nel loro posto. La riga dice che
+   * c'era e dove sta.
+   *
+   * Sopra la soglia della mailbox si tengono i messaggi piu' recenti che ci
+   * stanno, e si dice quanti sono: meglio gli ultimi mesi detti onestamente
+   * che un trasferimento che non finisce.
+   */
+  private async impacchettaStorico(): Promise<{ dati: Uint8Array; gz: boolean; messaggi: number } | null> {
+    const senzaByte = (m: Message): Message => {
+      if (!m.file) return m;
+      const { percorso: _p, ...file } = m.file;
+      return { ...m, file: { ...file, stato: 'altrove' } };
+    };
+    let messaggi = (await this.history.all()).map(senzaByte).sort((a, b) => a.at - b.at);
+    if (!messaggi.length && !this.groups().length) return null;
+    for (;;) {
+      const pacco: PaccoStorico = { v: 1, messaggi, gruppi: this.groups(), nome: this.vault.profile.name };
+      const chiaro = te.encode(JSON.stringify(pacco));
+      const compresso = await comprimi(chiaro);
+      const dati = compresso ?? chiaro;
+      if (dati.length <= SOGLIA_MAILBOX) return { dati, gz: compresso !== null, messaggi: messaggi.length };
+      if (!messaggi.length) return null;
+      // Troppo: si tolgono i piu' vecchi, un quarto alla volta.
+      messaggi = messaggi.slice(Math.max(1, Math.floor(messaggi.length / 4)));
+    }
+  }
+
+  /** Lo storico a UN proprio dispositivo, a pezzi, come un file sulla mailbox. */
+  private async mandaStorico(d: Dispositivo): Promise<void> {
+    const mailbox = this.mailbox;
+    if (!mailbox) return;
+    const pacco = await this.impacchettaStorico();
+    if (!pacco) return;
+    const id = identificativo().replace(/-/g, '');
+    const pezzi = Math.ceil(pacco.dati.length / PEZZO_FILE);
+    const manda = async (p: Payload) => {
+      await mailbox.send(d.card, this.sessionFor(d).encrypt(encodePayload(p)), 'messaggio', d.relay);
+    };
+    await manda({
+      v: 1,
+      t: 'storico.offer',
+      id,
+      dimensione: pacco.dati.length,
+      pezzi,
+      sha256: hex(sha256(pacco.dati)),
+      gz: pacco.gz,
+      messaggi: pacco.messaggi,
+    });
+    for (let n = 0; n < pezzi; n++) {
+      const fetta = pacco.dati.subarray(n * PEZZO_FILE, Math.min((n + 1) * PEZZO_FILE, pacco.dati.length));
+      await manda({ v: 1, t: 'storico.pezzo', id, n, dati: b64u(fetta) });
+    }
+  }
+
+  private riceviStoricoOfferta(offerta: StoricoOfferPayload): void {
+    if (offerta.dimensione > SOGLIA_MAILBOX || offerta.pezzi > Math.ceil(SOGLIA_MAILBOX / PEZZO_FILE)) return;
+    if (offerta.pezzi === 0 || this.storiciInArrivo.has(offerta.id)) return;
+    this.storiciInArrivo.set(offerta.id, {
+      offerta,
+      pezzi: new Array<Uint8Array | undefined>(offerta.pezzi),
+      arrivati: 0,
+    });
+  }
+
+  private async riceviStoricoPezzo(pezzo: { id: string; n: number; dati: string }, at: number): Promise<Message | null> {
+    const corso = this.storiciInArrivo.get(pezzo.id);
+    if (!corso) return null;
+    if (pezzo.n >= corso.pezzi.length || corso.pezzi[pezzo.n]) return null;
+    const bytes = unb64u(pezzo.dati);
+    if (bytes.length > PEZZO_FILE) return null;
+    corso.pezzi[pezzo.n] = bytes;
+    corso.arrivati++;
+    if (corso.arrivati < corso.pezzi.length) return null;
+
+    this.storiciInArrivo.delete(pezzo.id);
+    const intero = cat(...(corso.pezzi as Uint8Array[]));
+    if (intero.length !== corso.offerta.dimensione || hex(sha256(intero)) !== corso.offerta.sha256) return null;
+    let pacco: PaccoStorico;
+    try {
+      const chiaro = corso.offerta.gz ? await decomprimi(intero) : intero;
+      pacco = JSON.parse(new TextDecoder().decode(chiaro)) as PaccoStorico;
+    } catch {
+      return null;
+    }
+    return this.importaStorico(pacco, at);
+  }
+
+  /**
+   * Quello che arriva si controlla campo per campo, anche se viene da un
+   * proprio dispositivo: e' un proprio dispositivo, non e' per forza sano.
+   */
+  private async importaStorico(pacco: PaccoStorico, at: number): Promise<Message | null> {
+    if (!pacco || pacco.v !== 1) return null;
+    const messaggi: Message[] = [];
+    for (const m of Array.isArray(pacco.messaggi) ? pacco.messaggi : []) {
+      if (!m || typeof m !== 'object') continue;
+      if (typeof m.id !== 'string' || !/^[0-9a-zA-Z-]{1,64}$/.test(m.id)) continue;
+      if (typeof m.peer !== 'string' || !/^[0-9a-f]{8,128}$/.test(m.peer)) continue;
+      if (typeof m.text !== 'string' || m.text.length > 64 * 1024) continue;
+      if (typeof m.at !== 'number' || !Number.isFinite(m.at)) continue;
+      // La riga di un file arriva senza byte, qualunque cosa dica: qui non ci sono.
+      const file = m.file && typeof m.file === 'object' ? { ...m.file, stato: 'altrove' as const } : undefined;
+      if (file) delete (file as { percorso?: string }).percorso;
+      messaggi.push({ ...m, mine: m.mine === true, ...(file ? { file } : {}) });
+    }
+    let gruppiNuovi = 0;
+    for (const g of Array.isArray(pacco.gruppi) ? pacco.gruppi : []) {
+      try {
+        // Si passa dalla stessa validazione di un gruppo che arriva da un
+        // contatto: ne' piu' ne' meno fiducia di quella.
+        const stato = decodePayload(encodePayload(stateOf(g)));
+        if (stato.t !== 'group.state') continue;
+        if (!stato.members.some((m) => m.id === this.id)) continue;
+        for (const m of stato.members) {
+          if (m.id === this.id || this.vault.contacts[m.id]) continue;
+          try {
+            await this.storeContact(cardAccountFromUri(m.card), m.name);
+          } catch {
+            /* card non valida: il membro si salta */
+          }
+        }
+        if (!this.vault.groups[stato.g]) gruppiNuovi++;
+        this.vault.groups[stato.g] = mergeGroup(this.vault.groups[stato.g], stato, stato.at);
+      } catch {
+        /* gruppo malformato: si salta quello */
+      }
+    }
+    if (!this.vault.profile.name && typeof pacco.nome === 'string' && pacco.nome.trim()) {
+      this.vault.profile.name = pacco.nome.trim().slice(0, 60);
+    }
+    const importati = await this.history.importa(messaggi);
+    await this.save();
+    for (const cb of this.osservatoriStorico) cb(importati);
+    const pezzi = [
+      importati ? `${importati} ${importati === 1 ? 'messaggio' : 'messaggi'}` : '',
+      gruppiNuovi ? `${gruppiNuovi} ${gruppiNuovi === 1 ? 'gruppo' : 'gruppi'}` : '',
+    ].filter(Boolean);
+    if (!pezzi.length) return null;
+    return this.record({
+      peer: this.id,
+      mine: false,
+      text: `Storico ricevuto dall altro dispositivo: ${pezzi.join(' e ')}. I file restano dove sono arrivati.`,
+      at,
+      system: true,
+    });
   }
 
   /**
@@ -1057,7 +1442,17 @@ export class Account {
     // azzerare la verifica ogni volta vorrebbe dire non restare mai verificati.
     const prima = improntaAccount(sender.account, sender.dispositivi);
     const dopo = improntaAccount(sender.account, validi);
-    if (prima === dopo) return;
+    if (hex(prima) === hex(dopo)) {
+      // Stessi dispositivi. Possono essere cambiati solo i relay, che non
+      // entrano nel numero di sicurezza: si aggiornano e basta, e la verifica
+      // fatta a voce resta dov'e' — copre le chiavi, non gli indirizzi.
+      const relayDi = (elenco: readonly Dispositivo[]) => JSON.stringify(elenco.map((d) => [d.id, d.relay ?? null]));
+      if (relayDi(sender.dispositivi) !== relayDi(validi)) {
+        riga.dispositivi = validi.map(perTrasporto);
+        await this.save();
+      }
+      return;
+    }
 
     riga.dispositivi = validi.map(perTrasporto);
 
@@ -1685,6 +2080,13 @@ export class Account {
             card: cardAccountToUri({ account: c.account, dispositivi: c.dispositivi }),
           })),
         });
+        // E lo storico, a lui solo: gli altri dispositivi lo hanno gia'. Un
+        // errore qui non deve impedire il collegamento, che e' gia' avvenuto.
+        try {
+          await this.mandaStorico(aggiunto);
+        } catch {
+          /* relay che non rispondono: il dispositivo e' collegato comunque */
+        }
         return this.record({
           peer: this.id,
           mine: false,
@@ -1721,6 +2123,16 @@ export class Account {
         // Non tocca lo storico: e' traffico di servizio fra i due programmi.
         for (const cb of this.segnalatori) cb(sender.id, payload);
         return null;
+
+      case 'storico.offer':
+        // Solo da se stessi: nessuno riempie il tuo storico al posto tuo.
+        if (sender.id !== this.id) return null;
+        this.riceviStoricoOfferta(payload);
+        return null;
+
+      case 'storico.pezzo':
+        if (sender.id !== this.id) return null;
+        return this.riceviStoricoPezzo(payload, at);
     }
   }
 
@@ -1901,7 +2313,10 @@ export class Account {
    */
   async connect(mailbox?: Mailbox, options: { live?: boolean } = {}): Promise<Mailbox> {
     if (this.mailbox) return this.mailbox;
-    this.mailbox = mailbox ?? new NostrMailbox(this.vault.identity);
+    this.mailboxInterna = !mailbox;
+    this.mailboxLive = options.live !== false;
+    this.mailbox =
+      mailbox ?? new NostrMailbox(this.vault.identity, { relays: this.relay().elenco, riserva: RELAY_RISERVA });
     if (options.live !== false) {
       this.unwatch = this.mailbox.watch((inbound) => {
         void this.ingest(inbound);
@@ -1913,6 +2328,9 @@ export class Account {
       // Un timer che tiene sveglio il processo per un pallino verde e' un
       // difetto, non una funzione: chi non ha altro da fare deve poter uscire.
       this.battito.unref?.();
+      // Si guarda subito come stanno i relay: se nessuno risponde, la riserva
+      // entra in ascolto da sola, e chi ci scrive dalla riserva ci trova.
+      if (this.mailbox instanceof NostrMailbox) this.mailbox.controlla(true).catch(() => {});
     }
     return this.mailbox;
   }

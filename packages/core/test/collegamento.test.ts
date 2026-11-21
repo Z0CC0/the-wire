@@ -158,7 +158,9 @@ describe('collegare un secondo dispositivo', () => {
     const accettato = await pc['accettaDispositivo'](
       (await import('../src/dispositivi.js')).perTrasporto(suaVoce)
     );
-    expect(accettato).toBe(false);
+    // null: rifiutato. (Un dispositivo accettato torna come voce, per potergli
+    // mandare lo storico.)
+    expect(accettato).toBeNull();
     expect(pc.dispositivi).toHaveLength(1);
     await pc.close();
     await estraneo.close();

@@ -43,8 +43,11 @@ export interface Mailbox {
    * spento un giorno tornerebbe con centinaia di chiavi da recuperare, e oltre
    * MAX_SKIP la sessione si rompe per sempre. Un battito perso non deve costare
    * niente, quindi viaggia fuori dal ratchet e nessuno lo va a ripescare.
+   *
+   * `relay` sono quelli su cui il destinatario ha detto di ascoltare, se li ha
+   * detti. Il trasporto pubblica li', oltre che sui propri.
    */
-  send(to: ContactCard, envelope: Uint8Array, canale?: Canale): Promise<void>;
+  send(to: ContactCard, envelope: Uint8Array, canale?: Canale, relay?: readonly string[]): Promise<void>;
   /**
    * Ritira quello che e' arrivato mentre eravamo via.
    * `dopo` (secondi epoch) limita la finestra: senza, si ripescano sempre
@@ -110,6 +113,8 @@ export class MemoryMailbox implements Mailbox {
   private static boxes = new Map<string, Inbound[]>();
   private static watchers = new Map<string, Set<(m: Inbound) => void>>();
   private static counter = 0;
+  /** Per destinatario, i relay che l'ultimo invio avrebbe usato (null = solo i propri). */
+  static readonly ultimiRelay = new Map<string, string[] | null>();
   private closed = false;
 
   constructor(private readonly ownAddress: string) {}
@@ -117,12 +122,16 @@ export class MemoryMailbox implements Mailbox {
   static reset(): void {
     MemoryMailbox.boxes.clear();
     MemoryMailbox.watchers.clear();
+    MemoryMailbox.ultimiRelay.clear();
     MemoryMailbox.counter = 0;
   }
 
-  async send(to: ContactCard, envelope: Uint8Array, canale: Canale = 'messaggio'): Promise<void> {
+  async send(to: ContactCard, envelope: Uint8Array, canale: Canale = 'messaggio', relay?: readonly string[]): Promise<void> {
     if (this.closed) throw new Error('mailbox chiusa');
     const address = hex(to.nostrPublic);
+    // Si annota su quali relay sarebbe andata: i test sulla scelta dei relay
+    // guardano qui, perche' in memoria un relay non esiste.
+    MemoryMailbox.ultimiRelay.set(address, relay ? [...relay] : null);
     const item: Inbound = {
       id: `mem-${++MemoryMailbox.counter}`,
       envelope,

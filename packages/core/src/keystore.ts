@@ -77,8 +77,9 @@ export interface Vault {
    *  dire "visto ieri" invece di niente dopo un riavvio. */
   readonly presenze: Record<string, number>;
   /** Il server TURN per il collegamento diretto, se l'utente ne ha scritto
-   *  uno. Sta nel deposito cifrato perche' porta una password. */
-  readonly rete: { turn: ServerTurn | null };
+   *  uno. Sta nel deposito cifrato perche' porta una password. `relay` e' la
+   *  lista personale dei relay: null vuol dire i predefiniti del programma. */
+  readonly rete: { turn: ServerTurn | null; relay?: string[] | null };
 }
 
 function deriveKey(passphrase: string, salt: Uint8Array): Uint8Array {
@@ -155,8 +156,8 @@ function fromJson(json: string): Vault {
     viste: (o['viste'] as Vault['viste']) ?? {},
     profile: (o['profile'] as Vault['profile']) ?? { name: '' },
     presenze: (o['presenze'] as Vault['presenze']) ?? {},
-    // I depositi scritti prima non lo hanno: nessun server, come prima.
-    rete: (o['rete'] as Vault['rete']) ?? { turn: null },
+    // I depositi scritti prima non lo hanno: nessun server, relay predefiniti.
+    rete: { turn: null, relay: null, ...((o['rete'] as Partial<Vault['rete']> | undefined) ?? {}) },
   };
 }
 

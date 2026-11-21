@@ -16,18 +16,20 @@ import {
   DEFAULT_TOPIC,
   SENZA_SERRATURA,
   SOGLIA_MAILBOX,
+  nomeFileBackup,
   type Contact,
   type Group,
   type Message,
 } from '@wire/core';
 import { DepositoBrowser } from '@wire/core/deposito-browser.js';
 
-const VERSIONE = '0.1.1';
+const VERSIONE = '0.1.2';
 const deposito = new DepositoBrowser();
 
 let account: Account | null = null;
 const ascoltatori = new Set<(m: Message) => void>();
 const problemi = new Set<(p: { dove: string; testo: string }) => void>();
+const storici = new Set<(quanti: number) => void>();
 
 function richiediAccount(): Account {
   if (!account) throw new Error('account non sbloccato');
@@ -89,6 +91,9 @@ async function avvia(a: Account): Promise<void> {
   account = a;
   a.onMessage((m) => {
     for (const cb of ascoltatori) cb(m);
+  });
+  a.onStorico((quanti) => {
+    for (const cb of storici) cb(quanti);
   });
   try {
     await a.connect();
@@ -263,8 +268,29 @@ export const wireApi = {
     }));
   },
 
+  // ---------- relay ----------
+
+  relay: () => richiediAccount().relay(),
+  impostaRelay: (elenco: unknown[] | null) => richiediAccount().impostaRelay(elenco ?? null),
+  statoRelay: () => richiediAccount().statoRelay(),
+
+  // ---------- backup ----------
+
+  /** Sul telefono non c'e' una finestra di salvataggio del sistema: tornano
+   *  nome e byte, e la pagina li offre da scaricare. */
+  esportaBackup: async () => ({ nome: nomeFileBackup(), dati: inBase64(await richiediAccount().esportaBackup()) }),
+  /** Il file lo sceglie la pagina; qui arrivano i byte. Solo a deposito vuoto. */
+  ripristinaBackup: async (dati: string) => {
+    if (account) throw new Error('il ripristino vale solo su un dispositivo che non ha ancora un deposito');
+    return Account.ripristinaSuDeposito(daBase64(dati), deposito);
+  },
+
   // ---------- avvisi ----------
 
+  onStorico: (cb: (quanti: number) => void) => {
+    storici.add(cb);
+    return () => storici.delete(cb);
+  },
   onMessage: (cb: (m: Message) => void) => {
     ascoltatori.add(cb);
     return () => ascoltatori.delete(cb);

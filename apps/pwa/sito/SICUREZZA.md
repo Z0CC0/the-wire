@@ -5,7 +5,7 @@ Descrive cosa è protetto, con cosa, e — soprattutto — **cosa non lo è**. O
 affermazione qui dentro è verificabile nel codice; dove indico un file, quella è
 la riga da leggere.
 
-Versione: 0.1.1 — nomi interni definitivi (cartella dati `THE WIRE`, identificativo `com.mazzo.thewire`; chi arriva dalla 0.1.0 trova i dati rinominati al primo avvio, vedi `docs/ARCHITETTURA.md`).
+Versione: 0.1.2 — relay personali firmati nella card, riserva automatica, storico al dispositivo nuovo, backup in un file. (0.1.1: nomi interni definitivi, cartella dati `THE WIRE`, identificativo `com.mazzo.thewire`, vedi `docs/ARCHITETTURA.md`.)
 
 ---
 
@@ -210,6 +210,12 @@ quando il contatto ne collega uno; ma la schermata continuava a dire
 dispositivo non messo da voi. Ora la verifica si azzera quando l'insieme cambia
 davvero — le impronte si confrontano, così un annuncio identico non la tocca — e
 nella conversazione compare una riga che dice cosa è successo e cosa fare.
+*Correzione nella 0.1.2:* quel confronto era fatto fra due `Uint8Array` con
+`===`, che in JavaScript confronta i riferimenti e non i byte: era sempre
+"diverso", e ogni annuncio di dispositivi — anche identico — toglieva la
+verifica. Nessun test lo coglieva perché nessuno mandava un annuncio identico.
+Ora si confrontano in esadecimale, e `relay.test.ts` manda un annuncio che
+cambia solo i relay e pretende che la verifica resti.
 
 **VULN-05 — i permessi di scrittura non venivano chiusi. Era vero.** Ogni file
 in arrivo riceve un gettone, che è il permesso di scrivere in un punto preciso
@@ -254,7 +260,36 @@ i gettoni — che sono un'altra cosa — e falliva sempre. Corretto.
 Tutte e sette hanno ora un test che le copre. Quello sulla verifica è stato
 controllato al contrario: tolto il rimedio, il test fallisce.
 
-## Cosa è cambiato in questa versione
+## Cosa è cambiato nella 0.1.2
+
+1. **I relay viaggiano nella card, firmati.** La voce di ogni dispositivo può
+   portare la lista dei relay su cui ascolta; la firma della chiave d'account
+   la copre (`WIRE-DISPOSITIVO-2` in `packages/core/src/dispositivi.ts`), così
+   un relay sostituito per strada non passa. Le voci senza relay restano valide
+   con la forma di prima. I relay **non** entrano nel numero di sicurezza:
+   coprono dove si ascolta, non chi si è, e cambiarli non deve far perdere la
+   verifica. Cosa concede: un contatto vede su quali relay ascolti, e un relay
+   che hai scelto tu vede ciò che vedono tutti gli altri — busta, destinatario,
+   ora — in più vede che quel destinatario l'hai scelto tu. Solo `wss://`: in
+   chiaro si rifiuta (`relay.ts`).
+2. **Riserva automatica.** Tre relay in più, usati solo quando nessuno dei
+   normali risponde. Entrano da entrambe le parti, quindi sono un punto
+   d'incontro; e sono stati misurati (29 relay pubblici provati con un gift wrap
+   da 54 KB il 2026-11-21: tre accettano, ventuno no). Il battito non li usa.
+3. **Lo storico passa al dispositivo nuovo.** Solo da un proprio dispositivo
+   (`sender.id === this.id`), dentro il ratchet, a pezzi come un file sulla
+   mailbox, con impronta. Chi riceve rivalida campo per campo: identificativi,
+   lunghezze, gruppi passati dalla stessa validazione di un gruppo che arriva da
+   un contatto. I file arrivano come righe senza byte.
+4. **Backup.** `packages/core/src/backup.ts`: il deposito così com'è — vault
+   cifrato con Argon2id, storico e file con le chiavi derivate — in un file
+   solo. Niente in chiaro dentro (`backup.test.ts` lo cerca). Si ripristina
+   solo su un deposito vuoto; alla prima apertura le sessioni per scrivere si
+   riaprono con X3DH, perché quelle nel backup sono ferme e riusarle vorrebbe
+   dire riusare numeri di messaggio. Nomi di voce diversi da quelli del deposito
+   non si scrivono.
+
+## Cosa è cambiato nella 0.1.0
 
 Rispetto alla 1.x, in ordine di importanza:
 
@@ -285,8 +320,14 @@ npm run build
 npm test
 ```
 
-217 test. I più interessanti per chi verifica:
+247 test. I più interessanti per chi verifica:
 
+- `packages/core/test/relay.test.ts` — relay firmati nella voce, manomissione
+  rifiutata, verifica che resta quando cambiano solo i relay.
+- `packages/core/test/backup.test.ts` — niente in chiaro nel file, ripristino
+  solo a deposito vuoto, conversazioni che ripartono in entrambi i versi.
+- `packages/core/test/storico.test.ts` — lo storico al dispositivo nuovo senza
+  doppioni, file come righe senza byte.
 - `packages/core/test/verifica-dispositivi.test.ts` — che la verifica cada
   quando i dispositivi del contatto cambiano, e resti quando non cambiano.
 - `apps/pwa/test/aggiornamento-sw.test.ts` — che l'app si accorga se i file sul

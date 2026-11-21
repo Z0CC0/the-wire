@@ -195,7 +195,39 @@ export interface CopiaPayload {
   readonly dentro: unknown;
 }
 
+/**
+ * Lo storico, dal primo dispositivo a quello appena collegato.
+ *
+ * Un dispositivo nuovo riceveva la rubrica e l'elenco dei dispositivi, e
+ * basta: ogni conversazione partiva vuota. Qui il primo dispositivo manda
+ * quello che ha — messaggi e gruppi — a pezzi, come un file sulla mailbox, e
+ * solo al dispositivo nuovo. Viaggia dentro il ratchet come tutto il resto.
+ * `gz` dice se il contenuto e' compresso; `messaggi` quanti ne contiene, per
+ * poterlo dire a chi riceve.
+ */
+export interface StoricoOfferPayload {
+  readonly v: 1;
+  readonly t: 'storico.offer';
+  readonly id: string;
+  readonly dimensione: number;
+  readonly pezzi: number;
+  readonly sha256: string;
+  readonly gz: boolean;
+  readonly messaggi: number;
+}
+
+/** Un pezzo di storico. `dati` e' base64url. */
+export interface StoricoPezzoPayload {
+  readonly v: 1;
+  readonly t: 'storico.pezzo';
+  readonly id: string;
+  readonly n: number;
+  readonly dati: string;
+}
+
 export type Payload =
+  | StoricoOfferPayload
+  | StoricoPezzoPayload
   | TextPayload
   | GroupMessagePayload
   | GroupStatePayload
@@ -331,6 +363,33 @@ export function decodePayload(bytes: Uint8Array): Payload {
         pezzi,
         ...(o['mid'] === undefined ? {} : { mid: str(o['mid'], 64, 'mid') }),
       };
+    }
+
+    case 'storico.offer': {
+      const dimensione = o['dimensione'];
+      const pezzi = o['pezzi'];
+      const messaggi = o['messaggi'];
+      for (const [nome, v] of [['dimensione', dimensione], ['pezzi', pezzi], ['messaggi', messaggi]] as const) {
+        if (typeof v !== 'number' || !Number.isInteger(v) || v < 0) throw new Error(`payload: ${nome} dello storico non valido`);
+      }
+      const sha = str(o['sha256'], 64, 'sha256');
+      if (!/^[0-9a-f]{64}$/.test(sha)) throw new Error('payload: sha256 non valido');
+      return {
+        v: 1,
+        t: 'storico.offer',
+        id: id(o['id'], 'id'),
+        dimensione: dimensione as number,
+        pezzi: pezzi as number,
+        sha256: sha,
+        gz: o['gz'] === true,
+        messaggi: messaggi as number,
+      };
+    }
+
+    case 'storico.pezzo': {
+      const n = o['n'];
+      if (typeof n !== 'number' || !Number.isInteger(n) || n < 0) throw new Error('payload: numero di pezzo non valido');
+      return { v: 1, t: 'storico.pezzo', id: id(o['id'], 'id'), n, dati: str(o['dati'], MAX_PEZZO, 'dati') };
     }
 
     case 'file.chunk': {

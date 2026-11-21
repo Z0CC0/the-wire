@@ -59,7 +59,7 @@ describe('il server TURN nel deposito', () => {
   it('un deposito scritto prima si apre senza server', () => {
     const vecchio = { identity: createIdentity(), sessions: {}, contacts: {} } as unknown as Vault;
     const aperto = openVault(sealVault(vecchio, 'passphrase-lunga'), 'passphrase-lunga');
-    expect(aperto.rete).toEqual({ turn: null });
+    expect(aperto.rete).toEqual({ turn: null, relay: null });
   });
 
   it('sopravvive alla riapertura, e si toglie', async () => {
