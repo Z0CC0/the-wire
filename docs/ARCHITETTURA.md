@@ -91,9 +91,10 @@ npm test
 | Comando | Cosa fa |
 |---------|---------|
 | `npm run desktop` | costruisce il bundle e avvia la finestra Electron |
-| `npm test` | 247 test: crittografia, protocollo, gruppi, lock, consegna, prova d'insieme |
+| `npm test` | 257 test: crittografia, protocollo, gruppi, lock, consegna, prova d'insieme |
 | `npm run dist:win` | installer Windows (NSIS) |
 | `npm run dist:mac` | DMG macOS (arm64 + x64) |
+| `npm run dist:linux` | AppImage e deb per Linux x86_64 |
 
 ## Struttura
 
@@ -497,6 +498,26 @@ sessioni senza toccare contatto, storico e verifica, e va premuto **da entrambe
 le parti** — farlo da una sola aggiusta una direzione e lascia muta l'altra.
 
 Copertura in `packages/core/test/incrocio.test.ts`.
+
+## Il ratchet sotto stress
+
+`ratchet-robustezza.test.ts` genera le consegne da un numero di partenza
+fisso — xorshift32, quattro semi — così un fallimento si rifà identico: 300
+messaggi con mittente a caso, fino a venti buste in volo consegnate in ordine a
+caso, il 3% che si perde (mai oltre un quarto di `MAX_SKIP`), il 10% di
+doppioni, lo stato salvato e ricaricato il 5% delle volte. Alla fine ognuno
+deve aver letto esattamente ciò che l'altro ha mandato e la conversazione deve
+continuare. Poi le buste rotte: un bit girato nel mezzo e a cavallo di un giro
+di DH, 200 buste di byte a caso, un'intestazione presa da un'altra busta. Per
+ognuna si pretende lo stato **identico byte per byte** dopo il fallimento.
+
+Scrivendoli sono venuti fuori due difetti. `ratchetDecrypt` avanzava lo stato
+prima di controllare il tag — nell'app non si vedeva perché l'Account decifra
+su una copia, ma la funzione non garantiva niente da sola — e ora lavora su una
+copia che applica solo se riesce. E le chiavi saltate si accumulavano senza un
+tetto complessivo: `MAX_SKIP` limita un salto, non la somma dei salti; ora si
+tengono le ultime 2000 (`MAX_SKIPPED_TOTAL`). Il dettaglio sta in
+`SICUREZZA.md`.
 
 ## File
 

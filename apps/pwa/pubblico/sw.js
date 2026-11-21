@@ -20,7 +20,7 @@
 // Cosa NON fa: non tocca i messaggi, non tiene niente in sottofondo, non parla
 // con nessun server oltre a quello da cui e' stata scaricata.
 
-const CACHE = 'the-wire-0.1.2';
+const CACHE = 'the-wire-0.1.3';
 const FILE = [
   './',
   './index.html',

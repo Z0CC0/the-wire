@@ -83,7 +83,7 @@ fallito — riprova, non proseguire.
 npm test
 ```
 
-**Devono passare tutti (247).** Se uno è rosso, fermati e riporta quale: è
+**Devono passare tutti (257).** Se uno è rosso, fermati e riporta quale: è
 crittografia, un test rosso vale più di un pacchetto pronto. Unica eccezione:
 un test che fallisce con `Test timed out in 20000ms` su una macchina carica.
 Quelli creano più identità con Argon2id (64 MB l'una) in parallelo e possono
@@ -128,7 +128,7 @@ open "release/mac-arm64/THE WIRE.app"       # su Intel: release/mac/
 ```
 
 Deve aprirsi una finestra nera col logo **THE WIRE** e la schermata
-`PRIMO AVVIO · v0.1.2`. Se compare invece un riquadro "A JavaScript error
+`PRIMO AVVIO · v0.1.3`. Se compare invece un riquadro "A JavaScript error
 occurred in the main process", riporta il testo esatto all'utente: significa che
 qualcosa nel pacchetto non ha funzionato, e il messaggio dice cosa.
 

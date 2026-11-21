@@ -23,6 +23,18 @@ import type { ContactCard, Identity } from './identity.js';
  *  derivazioni all'infinito: negazione di servizio gratuita. */
 export const MAX_SKIP = 1000;
 
+/**
+ * Quante chiavi saltate si tengono in tutto, su tutte le catene.
+ *
+ * `MAX_SKIP` limita un solo salto; senza un tetto complessivo un contatto
+ * potrebbe mandare una catena nuova dopo l'altra, ciascuna con mille
+ * messaggi "persi", e far crescere lo stato — e il deposito — senza fine.
+ * Signal tiene le ultime duemila: le piu' vecchie si lasciano andare, e un
+ * messaggio che arriva dopo duemila successivi non si apre piu'. E' un prezzo
+ * che nessuna conversazione vera paga.
+ */
+export const MAX_SKIPPED_TOTAL = 2000;
+
 export const HEADER_BYTES = 32 + 4 + 4;
 
 export interface Header {
@@ -227,6 +239,35 @@ function skipUntil(state: RatchetState, until: number): void {
     state.skipped.set(skipKey(state.remote!, state.nr), messageKey);
     state.nr += 1;
   }
+  // Una Map ricorda l'ordine d'inserimento: la prima e' la piu' vecchia.
+  while (state.skipped.size > MAX_SKIPPED_TOTAL) {
+    const piuVecchia = state.skipped.keys().next().value;
+    if (piuVecchia === undefined) break;
+    state.skipped.delete(piuVecchia);
+  }
+}
+
+/**
+ * Copia dello stato, per lavorare senza toccare l'originale.
+ *
+ * Le chiavi sono byte immutabili nell'uso che se ne fa qui (si sostituiscono,
+ * non si modificano sul posto), quindi basta copiare la struttura e la Map.
+ */
+function copia(state: RatchetState): RatchetState {
+  return { ...state, self: { ...state.self }, skipped: new Map(state.skipped) };
+}
+
+/** Riporta nell'originale cio' che la copia ha deciso. */
+function applica(dentro: RatchetState, da: RatchetState): void {
+  dentro.self = da.self;
+  dentro.remote = da.remote;
+  dentro.rootKey = da.rootKey;
+  dentro.sendChain = da.sendChain;
+  dentro.recvChain = da.recvChain;
+  dentro.ns = da.ns;
+  dentro.nr = da.nr;
+  dentro.pn = da.pn;
+  dentro.skipped = da.skipped;
 }
 
 function dhRatchet(state: RatchetState, header: Header): void {
@@ -245,12 +286,29 @@ function dhRatchet(state: RatchetState, header: Header): void {
   state.sendChain = sendChain;
 }
 
+/**
+ * Decifra, e cambia lo stato SOLO se la decifratura riesce.
+ *
+ * Prima no: il giro di DH e l'avanzamento della catena avvenivano prima di
+ * controllare il tag, quindi una busta manomessa — o consegnata alla sessione
+ * sbagliata — lasciava la sessione avanzata su una catena che l'altro non ha,
+ * e da li' in poi niente si apriva piu'. L'Account si difendeva decifrando su
+ * una copia serializzata; ora la garanzia sta qui, dove deve stare, e vale
+ * per chiunque chiami questa funzione.
+ */
 export function ratchetDecrypt(
   state: RatchetState,
   header: Header,
   ciphertext: Uint8Array,
   extraAad: Uint8Array = new Uint8Array(0)
 ): Uint8Array {
+  const prova = copia(state);
+  const plaintext = decifraSu(prova, header, ciphertext, extraAad);
+  applica(state, prova);
+  return plaintext;
+}
+
+function decifraSu(state: RatchetState, header: Header, ciphertext: Uint8Array, extraAad: Uint8Array): Uint8Array {
   const fromSkipped = trySkipped(state, header, ciphertext, extraAad);
   if (fromSkipped) return fromSkipped;
 

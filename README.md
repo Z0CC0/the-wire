@@ -10,12 +10,12 @@
 </p>
 
 <p align="center">
-  <img alt="versione" src="https://img.shields.io/badge/versione-0.1.2-ff1f1f?style=flat-square">
+  <img alt="versione" src="https://img.shields.io/badge/versione-0.1.3-ff1f1f?style=flat-square">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-installer-000?style=flat-square">
   <img alt="macOS" src="https://img.shields.io/badge/macOS-dmg-000?style=flat-square">
   <img alt="Android" src="https://img.shields.io/badge/Android-apk-000?style=flat-square">
   <img alt="iPhone" src="https://img.shields.io/badge/iPhone-web%20app-000?style=flat-square">
-  <img alt="test" src="https://img.shields.io/badge/test-247%20verdi-000?style=flat-square">
+  <img alt="test" src="https://img.shields.io/badge/test-257%20verdi-000?style=flat-square">
 </p>
 
 ---
@@ -70,9 +70,9 @@ sull'altro. Il telefono funziona a computer spento.
 - **Tutto sul disco è cifrato.** Chiavi, storico e file ricevuti stanno in un
   deposito protetto da Argon2id; dopo dieci minuti senza nessuno l'account si
   blocca da solo.
-- **Un cuore solo, quattro facce.** Il protocollo sta in un unico pacchetto
-  TypeScript condiviso da Windows, macOS, Android e web app: non esistono due
-  implementazioni da tenere allineate.
+- **Un cuore solo, cinque facce.** Il protocollo sta in un unico pacchetto
+  TypeScript condiviso da Windows, macOS, Linux, Android e web app: non esistono
+  due implementazioni da tenere allineate.
 
 ## Difetti e limiti, detti prima
 
@@ -81,8 +81,10 @@ sull'altro. Il telefono funziona a computer spento.
   correlare i tempi. È il limite strutturale, e non si risolve senza cambiare
   trasporto.
 - **Il Double Ratchet è un'implementazione originale**, scritta e testata con
-  cura ma **non sottoposta a revisione esterna**. Va bene fra amici. Non usarlo dove la riservatezza è questione di sicurezza
-  personale: per quello esiste Signal.
+  cura — dalla 0.1.3 anche sotto stress: consegne a caso, perdite, doppioni,
+  buste manomesse, stato ricaricato a metà — ma **non sottoposta a revisione
+  esterna**. Va bene fra amici. Non usarlo dove la riservatezza è questione di
+  sicurezza personale: per quello esiste Signal.
 - **Niente notifiche push.** Richiederebbero un server che sa quando arriva un
   messaggio e per chi — esattamente ciò che il programma evita di far
   esistere. I messaggi si vedono aprendo l'app.
@@ -143,8 +145,9 @@ Tutto sta nella [pagina delle release](../../releases): un file per sistema.
 
 | Sistema | File | Come |
 |---|---|---|
-| **Windows** 10/11 | `THE-WIRE-Setup-0.1.2.exe` | Doppio clic. Si installa per l'utente corrente e mette l'icona sul desktop. SmartScreen avvisa perché non è firmato: *Ulteriori informazioni → Esegui comunque*. |
-| **macOS** (Apple Silicon e Intel) | `THE-WIRE-0.1.2-arm64.dmg` / `THE-WIRE-0.1.2-x64.dmg` | Apri il DMG e trascina in Applicazioni. La prima volta **tasto destro → Apri** (non è firmato). Se insiste: `xattr -cr "/Applications/THE WIRE.app"`. |
+| **Windows** 10/11 | `THE-WIRE-Setup-0.1.3.exe` | Doppio clic. Si installa per l'utente corrente e mette l'icona sul desktop. SmartScreen avvisa perché non è firmato: *Ulteriori informazioni → Esegui comunque*. |
+| **macOS** (Apple Silicon e Intel) | `THE-WIRE-0.1.3-arm64.dmg` / `THE-WIRE-0.1.3-x64.dmg` | Apri il DMG e trascina in Applicazioni. La prima volta **tasto destro → Apri** (non è firmato). Se insiste: `xattr -cr "/Applications/THE WIRE.app"`. |
+| **Linux** (x86_64) | `THE-WIRE-0.1.3-linux-x86_64.AppImage` / `THE-WIRE-0.1.3-linux-amd64.deb` | L'AppImage si rende eseguibile (`chmod +x`) e si avvia; il `.deb` si installa con `sudo apt install ./THE-WIRE-…deb` su Debian e Ubuntu. I dati vanno in `~/.config/the-wire`. |
 | **Android** | `THE-WIRE-Android.apk` | Copia sul telefono e apri: Android chiede di consentire l'installazione da fonti sconosciute. Niente Play Store, niente indirizzo web. |
 | **iPhone** (e Android senza installare) | **[https://z0cc0.github.io/the-wire/](https://z0cc0.github.io/the-wire/)** | È la web app, già in linea su GitHub Pages da questo repository. Dal telefono si apre quell'indirizzo — **con Safari** su iPhone — e si aggiunge alla schermata Home. `THE-WIRE-telefono.zip` nella release è la stessa cartella, per chi vuole un indirizzo proprio: [LEGGIMI-telefono.md](LEGGIMI-telefono.md). |
 
@@ -160,7 +163,7 @@ Tutto sta nella [pagina delle release](../../releases): un file per sistema.
 > toccano, e al primo avvio la nuova li ritrova da sola (rinomina la cartella
 > `THE WIRE 2` in `THE WIRE`). Su Android l'APK 0.1.0 va disinstallato e il
 > telefono ricollegato al PC con un codice nuovo. La web app non cambia nulla.
-> Dalla 0.1.1 alla 0.1.2 si installa sopra, e basta.
+> Dalla 0.1.1 in su si installa sopra, e basta.
 
 ### Primi passi
 
@@ -198,7 +201,7 @@ Serve solo Node.js 22. Nessun compilatore, nessuna libreria di sistema.
 
 ```bash
 npm install
-npm test            # 247 test: crittografia, protocollo, gruppi, lock, consegna, trasferimento diretto
+npm test            # 257 test: crittografia, protocollo, gruppi, lock, consegna, trasferimento diretto
 npm run desktop     # avvia la finestra dai sorgenti
 ```
 
@@ -206,12 +209,13 @@ npm run desktop     # avvia la finestra dai sorgenti
 |---|---|---|
 | Windows | `npm run dist:win` | `release/*.exe` (solo su Windows) |
 | macOS | `npm run dist:mac` | `release/*.dmg` (solo su macOS) |
+| Linux | `npm run dist:linux` | `release/*.AppImage`, `release/*.deb` (su Linux) |
 | Android | `npm run android` | `android/app/build/outputs/apk/release/` (serve JDK + SDK Android) |
 | Telefono senza installare | `npm run pwa` | `apps/pwa/sito` |
 
 Il workflow in `.github/workflows/build.yml` fa tutto questo da solo a ogni
-tag `v*`: Windows e Android su macchine Linux/Windows di GitHub, il DMG su una
-macchina macOS, e allega i quattro file alla release. Se un test è rosso, non
+tag `v*`: Windows, Linux e Android su macchine Linux/Windows di GitHub, il DMG
+su una macchina macOS, e allega tutto alla release. Se un test è rosso, non
 costruisce niente.
 
 Per lanciare due copie del programma sullo stesso PC (due identità, per

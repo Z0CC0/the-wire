@@ -5,7 +5,7 @@ Descrive cosa è protetto, con cosa, e — soprattutto — **cosa non lo è**. O
 affermazione qui dentro è verificabile nel codice; dove indico un file, quella è
 la riga da leggere.
 
-Versione: 0.1.2 — relay personali firmati nella card, riserva automatica, storico al dispositivo nuovo, backup in un file. (0.1.1: nomi interni definitivi, cartella dati `THE WIRE`, identificativo `com.mazzo.thewire`, vedi `docs/ARCHITETTURA.md`.)
+Versione: 0.1.3 — decifratura del ratchet atomica, tetto alle chiavi saltate, test sotto stress; pacchetti Linux. (0.1.2: relay personali firmati nella card, riserva, storico al dispositivo nuovo, backup. 0.1.1: nomi interni definitivi, vedi `docs/ARCHITETTURA.md`.)
 
 ---
 
@@ -260,6 +260,36 @@ i gettoni — che sono un'altra cosa — e falliva sempre. Corretto.
 Tutte e sette hanno ora un test che le copre. Quello sulla verifica è stato
 controllato al contrario: tolto il rimedio, il test fallisce.
 
+## Cosa è cambiato nella 0.1.3
+
+Due difetti nel ratchet, trovati scrivendo i test sotto stress
+(`packages/core/test/ratchet-robustezza.test.ts`) e corretti in
+`packages/core/src/ratchet.ts`:
+
+1. **La decifratura non era atomica.** Il giro di DH e l'avanzamento della
+   catena avvenivano *prima* del controllo del tag: una busta manomessa, o
+   consegnata alla sessione sbagliata, lasciava la sessione avanzata su una
+   catena che l'altro non ha, e da lì niente si apriva più. L'Account si
+   difendeva decifrando su una copia serializzata della sessione, quindi
+   nell'app il difetto non si vedeva; ma la garanzia stava nel chiamante, non
+   nella funzione. Ora `ratchetDecrypt` lavora su una copia dello stato e la
+   applica solo se la decifratura riesce. Il test gira un bit in una busta nel
+   mezzo, e a cavallo di un giro di DH, e pretende lo stato identico byte per
+   byte e il messaggio dopo leggibile.
+2. **Le chiavi saltate non avevano un tetto complessivo.** `MAX_SKIP` limita un
+   salto solo; un contatto poteva mandare una catena nuova dopo l'altra,
+   ciascuna con mille messaggi "persi", e far crescere stato e deposito senza
+   fine. Ora si tengono le ultime 2000 (`MAX_SKIPPED_TOTAL`, come Signal) e le
+   più vecchie si lasciano andare.
+
+I test sotto stress: 300 messaggi con mittente a caso, consegne in ordine a
+caso con fino a venti buste in volo, 3% di perdite, doppioni rimandati, stato
+salvato e ricaricato a metà, quattro semi diversi; 200 buste di byte a caso
+che non devono produrre altro che un errore e non devono toccare lo stato; il
+confine esatto di `MAX_SKIP`. Non è una revisione esterna, e il README continua
+a dirlo: è il modo di togliere al ratchet gli errori che una macchina a stati
+fa di solito.
+
 ## Cosa è cambiato nella 0.1.2
 
 1. **I relay viaggiano nella card, firmati.** La voce di ogni dispositivo può
@@ -320,8 +350,10 @@ npm run build
 npm test
 ```
 
-247 test. I più interessanti per chi verifica:
+257 test. I più interessanti per chi verifica:
 
+- `packages/core/test/ratchet-robustezza.test.ts` — il ratchet sotto stress:
+  consegne a caso, buste rotte che non toccano lo stato, i limiti sui salti.
 - `packages/core/test/relay.test.ts` — relay firmati nella voce, manomissione
   rifiutata, verifica che resta quando cambiano solo i relay.
 - `packages/core/test/backup.test.ts` — niente in chiaro nel file, ripristino

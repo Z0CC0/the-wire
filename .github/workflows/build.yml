@@ -1,4 +1,4 @@
-# Pacchetti per Windows, macOS, Android e telefono, e la release su GitHub.
+# Pacchetti per Windows, macOS, Linux, Android e telefono, e la release su GitHub.
 #
 # Il pacchetto macOS si puo' costruire SOLO su macOS: il bundle .app e il DMG
 # richiedono strumenti Apple che su Windows non esistono. Qui il lavoro lo fa
@@ -32,6 +32,10 @@ jobs:
             nome: macos
             comando: npm run dist:mac
             file: release/*.dmg
+          - os: ubuntu-latest
+            nome: linux
+            comando: npm run dist:linux
+            file: release/*linux*
           - os: ubuntu-latest
             nome: android
             comando: npm run android:sync && cd android && chmod +x gradlew && ./gradlew assembleRelease --no-daemon && cd .. && cp android/app/build/outputs/apk/release/app-release.apk release/THE-WIRE-Android.apk
@@ -108,5 +112,6 @@ jobs:
 
             - **Windows**: `THE-WIRE-Setup-x.y.z.exe` — doppio clic, si installa da solo.
             - **macOS**: `.dmg` per Apple Silicon (arm64) e Intel (x64). Non firmato: la prima volta tasto destro → Apri.
+            - **Linux**: `.AppImage` (si rende eseguibile e si avvia) oppure `.deb` per Debian e Ubuntu.
             - **Android**: `THE-WIRE-Android.apk` — si copia sul telefono e si installa.
             - **iPhone e Android senza installare**: la web app è già in linea su https://z0cc0.github.io/the-wire/ (aprire con Safari, poi «Aggiungi a schermata Home»). `THE-WIRE-telefono.zip` è la stessa cartella, per chi vuole metterla su un indirizzo proprio.

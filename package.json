@@ -1,7 +1,7 @@
 {
   "name": "the-wire",
   "private": true,
-  "version": "0.1.2",
+  "version": "0.1.3",
   "type": "module",
   "main": "apps/desktop/bundle/main.cjs",
   "description": "Messaggistica cifrata fra amici: PC (Electron), telefono (web app, Android, iPhone).",
@@ -24,6 +24,7 @@
     "pack": "npm run build && npm run bundle",
     "dist:win": "npm run pack && electron-builder --win --publish never",
     "dist:mac": "npm run pack && electron-builder --mac --publish never",
+    "dist:linux": "npm run pack && electron-builder --linux --publish never",
     "pwa": "npm run pack && node apps/pwa/costruisci.mjs",
     "telefono": "npm run pwa && node apps/pwa/costruisci-android.mjs",
     "android:sync": "npm run telefono && cap sync android",
@@ -93,6 +94,17 @@
     },
     "dmg": {
       "title": "THE WIRE"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "build/icon.png",
+      "category": "Network;InstantMessaging",
+      "maintainer": "Z0CC0 <Z0CC0@users.noreply.github.com>",
+      "synopsis": "Messaggistica cifrata da persona a persona, senza account e senza server.",
+      "artifactName": "THE-WIRE-${version}-linux-${arch}.${ext}"
     },
     "electronFuses": {
       "runAsNode": false,
